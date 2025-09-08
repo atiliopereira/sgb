@@ -1,0 +1,1054 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title }}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+    />
+    <style>
+      .totals-section {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        margin-top: 1rem;
+      }
+      .total-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+      }
+      .total-item.grand-total {
+        font-weight: bold;
+        font-size: 1.1em;
+        border-top: 1px solid #dee2e6;
+        padding-top: 0.5rem;
+      }
+      .form-row {
+        margin-bottom: 1rem;
+      }
+      .item-row {
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background-color: #fff;
+      }
+      .delete-item {
+        background-color: #dc3545;
+        border: none;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+      }
+      .autocomplete-wrapper {
+        position: relative;
+      }
+      .item-autocomplete,
+      .cliente-autocomplete,
+      .proveedor-autocomplete {
+        pointer-events: auto !important;
+        user-select: text !important;
+        -webkit-user-select: text !important;
+        -moz-user-select: text !important;
+        -ms-user-select: text !important;
+        cursor: text !important;
+        background-color: white !important;
+      }
+      .item-autocomplete:focus,
+      .cliente-autocomplete:focus,
+      .proveedor-autocomplete:focus {
+        border-color: #86b7fe !important;
+        outline: 0 !important;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+      }
+      .autocomplete-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-top: none;
+        border-radius: 0 0 0.25rem 0.25rem;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .autocomplete-item {
+        padding: 0.5rem;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+      }
+      .autocomplete-item:hover,
+      .autocomplete-item.selected {
+        background-color: #f8f9fa;
+      }
+      .autocomplete-item:last-child {
+        border-bottom: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container mt-4">
+      <h2>{{ title }}</h2>
+
+      <form method="post" id="liquidacion-form">
+        {% csrf_token %}
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-row">
+              <label for="{{ form.fecha.id_for_label }}" class="form-label"
+                >Fecha:</label
+              >
+              {{ form.fecha }}
+            </div>
+            <div class="form-row">
+              <label class="form-label">Cliente:</label>
+              <div class="autocomplete-wrapper">
+                <input
+                  type="text"
+                  class="form-control cliente-autocomplete"
+                  placeholder="Buscar cliente..."
+                  autocomplete="off"
+                  value="{% if form.instance.cliente %}{{ form.instance.cliente.nombre }}{% endif %}"
+                  tabindex="2"
+                />
+                {{ form.cliente }}
+                <div
+                  class="cliente-autocomplete-results autocomplete-results"
+                  style="display: none"
+                ></div>
+              </div>
+            </div>
+            <div class="form-row">
+              <label
+                for="{{ form.numero_liquidacion.id_for_label }}"
+                class="form-label"
+                >Número de Liquidación:</label
+              >
+              {{ form.numero_liquidacion }}
+            </div>
+            <div class="form-row">
+              <label
+                for="{{ form.numero_despacho.id_for_label }}"
+                class="form-label"
+                >Número de Despacho:</label
+              >
+              {{ form.numero_despacho }}
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="form-row">
+              <label for="{{ form.clase.id_for_label }}" class="form-label"
+                >Clase:</label
+              >
+              {{ form.clase }}
+            </div>
+            <div class="form-row">
+              <label
+                for="{{ form.numero_factura_comercial.id_for_label }}"
+                class="form-label"
+                >Número Factura Comercial:</label
+              >
+              {{ form.numero_factura_comercial }}
+            </div>
+          </div>
+        </div>
+
+        <hr />
+        <h4>Items</h4>
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle me-2"></i>
+          <strong>Información:</strong> Puedes agregar items a la liquidación utilizando el formulario a continuación o haciendo clic en "Agregar Item" para agregar más items.
+        </div>
+
+        {{ formset.management_form }}
+
+        <div id="item-formset">
+          {% for form in formset %}
+          <div
+            class="item-row"
+            data-form-index="{{ forloop.counter0 }}"
+            style="
+              border: 1px solid #ddd;
+              padding: 15px;
+              margin-bottom: 10px;
+              border-radius: 5px;
+            "
+          >
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label"><strong>Item:</strong></label>
+                <div class="autocomplete-wrapper">
+                  <input
+                    type="text"
+                    class="form-control item-autocomplete"
+                    placeholder="Buscar item..."
+                    autocomplete="off"
+                    value="{% if form.instance.item %}{{ form.instance.item.descripcion }}{% endif %}"
+                    data-selected-id="{% if form.item.value %}{{ form.item.value }}{% endif %}"
+                    tabindex="1"
+                  />
+                  {{ form.item }}
+                  <div class="autocomplete-results" style="display: none"></div>
+                </div>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label"><strong>Monto:</strong></label>
+                {{ form.monto }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label"><strong>IVA:</strong></label>
+                {{ form.iva }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label"><strong>Retención:</strong></label>
+                {{ form.retencion }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label"><strong>Subtotal:</strong></label>
+                {{ form.subtotal }}
+              </div>
+              <div class="col-md-1">
+                <label class="form-label">&nbsp;</label><br />
+                {% if form.DELETE %} {{ form.DELETE }}
+                <button
+                  type="button"
+                  class="delete-item btn btn-sm btn-danger"
+                  title="Eliminar item"
+                >
+                  ×
+                </button>
+                {% endif %}
+              </div>
+            </div>
+            {% for hidden in form.hidden_fields %} {{ hidden }} {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+
+        <button type="button" id="add-item" class="btn btn-secondary mb-3">
+          Agregar Item
+        </button>
+
+        <div class="totals-section">
+          <h5>Totales</h5>
+          <div class="total-item">
+            <span>Subtotal:</span>
+            <span id="total-subtotal">0.00</span>
+          </div>
+          <div class="total-item">
+            <span>Total IVA:</span>
+            <span id="total-iva">0.00</span>
+          </div>
+          <div class="total-item">
+            <span>Total Retenciones:</span>
+            <span id="total-retencion">0.00</span>
+          </div>
+          <div class="total-item grand-total">
+            <span>Total General:</span>
+            <span id="grand-total">0.00</span>
+          </div>
+        </div>
+
+        <hr />
+        <h4>Información Adicional</h4>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-row">
+              <label
+                for="{{ form.partida_arancelaria.id_for_label }}"
+                class="form-label"
+                >Partida Arancelaria:</label
+              >
+              {{ form.partida_arancelaria }}
+            </div>
+            <div class="form-row">
+              <label for="{{ form.ad_valorem.id_for_label }}" class="form-label"
+                >Ad Valorem:</label
+              >
+              {{ form.ad_valorem }}
+            </div>
+            <div class="form-row">
+              <label
+                for="{{ form.valor_imponible.id_for_label }}"
+                class="form-label"
+                >Valor Imponible:</label
+              >
+              {{ form.valor_imponible }}
+            </div>
+            <div class="form-row">
+              <label
+                for="{{ form.moneda_valor_imponible.id_for_label }}"
+                class="form-label"
+                >Moneda Valor Imponible:</label
+              >
+              {{ form.moneda_valor_imponible }}
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="form-row">
+              <label
+                for="{{ form.equivalente_gs.id_for_label }}"
+                class="form-label"
+                >Equivalente Gs:</label
+              >
+              {{ form.equivalente_gs }}
+            </div>
+            <div class="form-row">
+              <label
+                for="{{ form.tipo_cambio.id_for_label }}"
+                class="form-label"
+                >Tipo de Cambio:</label
+              >
+              {{ form.tipo_cambio }}
+            </div>
+            <div class="form-row">
+              <label for="{{ form.proveedor.id_for_label }}" class="form-label"
+                >Proveedor:</label
+              >
+              <div class="autocomplete-wrapper">
+                <input
+                  type="text"
+                  class="form-control proveedor-autocomplete"
+                  placeholder="Buscar proveedor..."
+                  autocomplete="off"
+                  value="{% if form.instance.proveedor %}{{ form.instance.proveedor.nombre }}{% if form.instance.proveedor.procedencia %} ({{ form.instance.proveedor.procedencia.nombre }}){% else %} (Sin especificar){% endif %}{% endif %}"
+                />
+                {% with form.proveedor as proveedor_widget %}
+                  <select name="{{ proveedor_widget.name }}" id="{{ proveedor_widget.id_for_label }}" style="display: none;">
+                    {% for choice in proveedor_widget %}
+                      {{ choice.tag }}
+                    {% endfor %}
+                  </select>
+                {% endwith %}
+                <div class="proveedor-autocomplete-results autocomplete-results" style="display: none;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <button type="submit" class="btn btn-primary">
+            {% if is_edit %}Actualizar{% else %}Guardar{% endif %} Liquidación
+          </button>
+          {% if is_edit %}
+          <a
+            href="{% url 'liquidacion_detail' liquidacion.pk %}"
+            class="btn btn-secondary"
+            >Cancelar</a
+          >
+          <a
+            href="{% url 'liquidacion_list' %}"
+            class="btn btn-outline-secondary"
+            >Volver a Lista</a
+          >
+          {% else %}
+          <a href="{% url 'liquidacion_list' %}" class="btn btn-secondary"
+            >Cancelar</a
+          >
+          {% endif %}
+        </div>
+      </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          let formIndex = {{ formset.total_form_count }};
+
+          // Autocomplete functionality
+          function initializeAutocomplete(wrapper) {
+              console.log('=== initializeAutocomplete called ===');
+              console.log('Wrapper:', wrapper);
+              const input = wrapper.querySelector('.item-autocomplete');
+              const hiddenInput = wrapper.querySelector('input[name*="item"]');
+              const resultsDiv = wrapper.querySelector('.autocomplete-results');
+              let selectedIndex = -1;
+              let searchTimeout;
+
+              console.log('Elements found:', {
+                  input: input,
+                  hiddenInput: hiddenInput,
+                  resultsDiv: resultsDiv
+              });
+
+              if (!input || !hiddenInput || !resultsDiv) {
+                  console.log('❌ Missing required elements, aborting autocomplete init');
+                  return;
+              }
+
+              console.log('✅ All elements found, setting up event listeners');
+
+              input.addEventListener('input', function() {
+                  const query = this.value.trim();
+                  console.log('Input event triggered, query:', query);
+                  selectedIndex = -1;
+
+                  clearTimeout(searchTimeout);
+
+                  if (query.length < 2) {
+                      resultsDiv.style.display = 'none';
+                      hiddenInput.value = '';
+                      return;
+                  }
+
+                  searchTimeout = setTimeout(() => {
+                      console.log('Fetching autocomplete for query:', query);
+                      fetch(`/liquidaciones/api/item-autocomplete/?q=${encodeURIComponent(query)}`)
+                          .then(response => {
+                              console.log('Fetch response:', response);
+                              return response.json();
+                          })
+                          .then(data => {
+                              console.log('Autocomplete data received:', data);
+                              displayResults(data.results, resultsDiv, input, hiddenInput);
+                          })
+                          .catch(error => {
+                              console.error('Error fetching autocomplete results:', error);
+                              resultsDiv.style.display = 'none';
+                          });
+                  }, 300);
+              });
+
+              input.addEventListener('keydown', function(e) {
+                  const items = resultsDiv.querySelectorAll('.autocomplete-item');
+
+                  if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                      updateSelection(items, selectedIndex);
+                  } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      selectedIndex = Math.max(selectedIndex - 1, 0);
+                      updateSelection(items, selectedIndex);
+                  } else if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (selectedIndex >= 0 && items[selectedIndex]) {
+                          selectItem(items[selectedIndex], input, hiddenInput, resultsDiv);
+                      }
+                  } else if (e.key === 'Escape') {
+                      resultsDiv.style.display = 'none';
+                      selectedIndex = -1;
+                  }
+              });
+
+              // Close results when clicking outside
+              document.addEventListener('click', function(e) {
+                  if (!wrapper.contains(e.target)) {
+                      resultsDiv.style.display = 'none';
+                      selectedIndex = -1;
+                  }
+              });
+          }
+
+          function displayResults(results, resultsDiv, input, hiddenInput) {
+              if (results.length === 0) {
+                  resultsDiv.style.display = 'none';
+                  return;
+              }
+
+              resultsDiv.innerHTML = '';
+              results.forEach((item, index) => {
+                  const div = document.createElement('div');
+                  div.className = 'autocomplete-item';
+                  div.textContent = item.text;
+                  div.dataset.id = item.id;
+
+                  div.addEventListener('click', () => {
+                      selectItem(div, input, hiddenInput, resultsDiv);
+                  });
+
+                  resultsDiv.appendChild(div);
+              });
+
+              resultsDiv.style.display = 'block';
+          }
+
+          function updateSelection(items, selectedIndex) {
+              items.forEach((item, index) => {
+                  item.classList.toggle('selected', index === selectedIndex);
+              });
+          }
+
+          function selectItem(item, input, hiddenInput, resultsDiv) {
+              input.value = item.textContent;
+              hiddenInput.value = item.dataset.id;
+              resultsDiv.style.display = 'none';
+          }
+
+          // Cliente Autocomplete functionality
+          function initializeClienteAutocomplete(wrapper) {
+              console.log('=== initializeClienteAutocomplete called ===');
+              const input = wrapper.querySelector('.cliente-autocomplete');
+              const hiddenInput = wrapper.querySelector('input[name="cliente"]');
+              const resultsDiv = wrapper.querySelector('.cliente-autocomplete-results');
+              let selectedIndex = -1;
+              let searchTimeout;
+
+              if (!input || !hiddenInput || !resultsDiv) {
+                  console.log('❌ Missing cliente autocomplete elements');
+                  return;
+              }
+
+              console.log('✅ Cliente autocomplete elements found');
+
+              input.addEventListener('input', function() {
+                  const query = this.value.trim();
+                  selectedIndex = -1;
+
+                  clearTimeout(searchTimeout);
+
+                  if (query.length < 2) {
+                      resultsDiv.style.display = 'none';
+                      hiddenInput.value = '';
+                      return;
+                  }
+
+                  searchTimeout = setTimeout(() => {
+                      console.log('Fetching cliente autocomplete for query:', query);
+                      fetch(`/liquidaciones/api/cliente-autocomplete/?q=${encodeURIComponent(query)}`)
+                          .then(response => response.json())
+                          .then(data => {
+                              console.log('Cliente autocomplete data received:', data);
+                              displayClienteResults(data.results, resultsDiv, input, hiddenInput);
+                          })
+                          .catch(error => {
+                              console.error('Error fetching cliente autocomplete:', error);
+                              resultsDiv.style.display = 'none';
+                          });
+                  }, 300);
+              });
+
+              input.addEventListener('keydown', function(e) {
+                  const items = resultsDiv.querySelectorAll('.autocomplete-item');
+
+                  if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                      updateSelection(items, selectedIndex);
+                  } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      selectedIndex = Math.max(selectedIndex - 1, 0);
+                      updateSelection(items, selectedIndex);
+                  } else if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (selectedIndex >= 0 && items[selectedIndex]) {
+                          selectClienteItem(items[selectedIndex], input, hiddenInput, resultsDiv);
+                      }
+                  } else if (e.key === 'Escape') {
+                      resultsDiv.style.display = 'none';
+                      selectedIndex = -1;
+                  }
+              });
+
+              // Close results when clicking outside
+              document.addEventListener('click', function(e) {
+                  if (!wrapper.contains(e.target)) {
+                      resultsDiv.style.display = 'none';
+                      selectedIndex = -1;
+                  }
+              });
+          }
+
+          function displayClienteResults(results, resultsDiv, input, hiddenInput) {
+              if (results.length === 0) {
+                  resultsDiv.style.display = 'none';
+                  return;
+              }
+
+              resultsDiv.innerHTML = '';
+              results.forEach((cliente, index) => {
+                  const div = document.createElement('div');
+                  div.className = 'autocomplete-item';
+                  div.textContent = cliente.text;
+                  div.dataset.id = cliente.id;
+
+                  div.addEventListener('click', () => {
+                      selectClienteItem(div, input, hiddenInput, resultsDiv);
+                  });
+
+                  resultsDiv.appendChild(div);
+              });
+
+              resultsDiv.style.display = 'block';
+          }
+
+          function selectClienteItem(item, input, hiddenInput, resultsDiv) {
+              input.value = item.textContent;
+              hiddenInput.value = item.dataset.id;
+              resultsDiv.style.display = 'none';
+          }
+
+          // Proveedor Autocomplete functionality
+          function initializeProveedorAutocomplete(wrapper) {
+              console.log('=== initializeProveedorAutocomplete called ===');
+              const input = wrapper.querySelector('.proveedor-autocomplete');
+              const hiddenInput = wrapper.querySelector('select[name="proveedor"]');
+              const resultsDiv = wrapper.querySelector('.proveedor-autocomplete-results');
+              let selectedIndex = -1;
+              let searchTimeout;
+
+              if (!input || !hiddenInput || !resultsDiv) {
+                  console.log('❌ Missing proveedor autocomplete elements');
+                  return;
+              }
+
+              console.log('✅ Proveedor autocomplete elements found');
+
+              input.addEventListener('input', function() {
+                  const query = this.value.trim();
+                  selectedIndex = -1;
+
+                  clearTimeout(searchTimeout);
+
+                  if (query.length < 2) {
+                      resultsDiv.style.display = 'none';
+                      hiddenInput.value = '';
+                      return;
+                  }
+
+                  searchTimeout = setTimeout(() => {
+                      console.log('Fetching proveedor autocomplete for query:', query);
+                      fetch(`/liquidaciones/api/proveedor-autocomplete/?q=${encodeURIComponent(query)}`)
+                          .then(response => response.json())
+                          .then(data => {
+                              console.log('Proveedor autocomplete data received:', data);
+                              displayProveedorResults(data.results, resultsDiv, input, hiddenInput);
+                          })
+                          .catch(error => {
+                              console.error('Error fetching proveedor autocomplete:', error);
+                              resultsDiv.style.display = 'none';
+                          });
+                  }, 300);
+              });
+
+              input.addEventListener('keydown', function(e) {
+                  const items = resultsDiv.querySelectorAll('.autocomplete-item');
+
+                  if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                      updateSelection(items, selectedIndex);
+                  } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      selectedIndex = Math.max(selectedIndex - 1, 0);
+                      updateSelection(items, selectedIndex);
+                  } else if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (selectedIndex >= 0 && items[selectedIndex]) {
+                          selectProveedorItem(items[selectedIndex], input, hiddenInput, resultsDiv);
+                      }
+                  } else if (e.key === 'Escape') {
+                      resultsDiv.style.display = 'none';
+                      selectedIndex = -1;
+                  }
+              });
+
+              // Close results when clicking outside
+              document.addEventListener('click', function(e) {
+                  if (!wrapper.contains(e.target)) {
+                      resultsDiv.style.display = 'none';
+                      selectedIndex = -1;
+                  }
+              });
+          }
+
+          function displayProveedorResults(results, resultsDiv, input, hiddenInput) {
+              if (results.length === 0) {
+                  resultsDiv.style.display = 'none';
+                  return;
+              }
+
+              resultsDiv.innerHTML = '';
+              results.forEach((proveedor, index) => {
+                  const div = document.createElement('div');
+                  div.className = 'autocomplete-item';
+                  div.textContent = proveedor.text;
+                  div.dataset.id = proveedor.id;
+
+                  div.addEventListener('click', () => {
+                      selectProveedorItem(div, input, hiddenInput, resultsDiv);
+                  });
+
+                  resultsDiv.appendChild(div);
+              });
+
+              resultsDiv.style.display = 'block';
+          }
+
+          function selectProveedorItem(item, input, hiddenInput, resultsDiv) {
+              input.value = item.textContent;
+              hiddenInput.value = item.dataset.id;
+              resultsDiv.style.display = 'none';
+          }
+
+          // Number formatting functions
+          function formatNumber(num) {
+              // Convert to integer and format with thousands separators
+              const intValue = Math.round(parseFloat(num) || 0);
+              return intValue.toLocaleString('es-PY'); // Paraguay locale for thousands separator
+          }
+
+          function unformatNumber(str) {
+              // Remove thousands separators and convert to number
+              if (!str) return 0;
+              return parseFloat(str.toString().replace(/\./g, '') || '0');
+          }
+
+          function formatInput(input) {
+              const cursorPos = input.selectionStart;
+              const value = unformatNumber(input.value);
+              const formatted = formatNumber(value);
+              input.value = formatted;
+
+              // Try to restore cursor position
+              const newCursorPos = Math.min(cursorPos + (formatted.length - input.value.length), formatted.length);
+              setTimeout(() => {
+                  input.setSelectionRange(newCursorPos, newCursorPos);
+              }, 0);
+          }
+
+          // Initialize number formatting for existing fields
+          function initializeNumberFormatting() {
+              document.querySelectorAll('.formatted-number').forEach(input => {
+                  // Format initial value if exists
+                  if (input.value && input.value !== '0') {
+                      input.value = formatNumber(input.value);
+                  }
+
+                  // Only add event listeners to non-readonly fields
+                  if (!input.readOnly) {
+                      // Add input event listener
+                      input.addEventListener('input', function() {
+                          formatInput(this);
+                          // Recalculate totals after formatting
+                          const row = this.closest('.item-row');
+                          if (row) {
+                              calculateSubtotal(row);
+                          }
+                      });
+
+                      // Format on blur
+                      input.addEventListener('blur', function() {
+                          formatInput(this);
+                      });
+                  }
+              });
+          }
+
+          // Function to restore item descriptions after form errors
+          function restoreItemDescriptions() {
+              document.querySelectorAll('.item-autocomplete').forEach(input => {
+                  const selectedId = input.dataset.selectedId;
+                  const hiddenInput = input.parentNode.querySelector('input[name*="item"]');
+                  
+                  if (selectedId && hiddenInput && hiddenInput.value && !input.value) {
+                      // Fetch item description if input is empty but has selected ID
+                      fetch(`/liquidaciones/api/item-autocomplete/?q=&id=${selectedId}`)
+                          .then(response => response.json())
+                          .then(data => {
+                              if (data.results && data.results.length > 0) {
+                                  input.value = data.results[0].text;
+                              }
+                          })
+                          .catch(error => {
+                              console.error('Error fetching item description:', error);
+                          });
+                  }
+              });
+          }
+
+          // Initialize autocomplete for existing forms
+          console.log('DOM loaded, looking for .autocomplete-wrapper elements...');
+          document.querySelectorAll('.autocomplete-wrapper').forEach(wrapper => {
+              if (wrapper.querySelector('.item-autocomplete')) {
+                  console.log('Initializing item autocomplete for wrapper:', wrapper);
+                  initializeAutocomplete(wrapper);
+              } else if (wrapper.querySelector('.cliente-autocomplete')) {
+                  console.log('Initializing cliente autocomplete for wrapper:', wrapper);
+                  initializeClienteAutocomplete(wrapper);
+              } else if (wrapper.querySelector('.proveedor-autocomplete')) {
+                  console.log('Initializing proveedor autocomplete for wrapper:', wrapper);
+                  initializeProveedorAutocomplete(wrapper);
+              }
+          });
+
+          // Restore item descriptions for form validation errors
+          restoreItemDescriptions();
+
+          // Initialize number formatting
+          initializeNumberFormatting();
+
+          // Initialize date picker
+          const dateInput = document.querySelector('input[name="fecha"]');
+          if (dateInput) {
+              flatpickr(dateInput, {
+                  dateFormat: "d-m-Y",        // Display format: dd-mm-yyyy
+                  altInput: true,             // Use alternate input for display
+                  altFormat: "d-m-Y",         // Alternate display format
+                  locale: "es",               // Spanish locale
+                  allowInput: true,           // Allow manual input
+                  clickOpens: true,           // Open on click
+                  defaultDate: dateInput.value ? new Date(dateInput.value) : null,
+                  onChange: function(selectedDates, dateStr, instance) {
+                      // Convert to yyyy-mm-dd format for Django
+                      if (selectedDates.length > 0) {
+                          const date = selectedDates[0];
+                          const year = date.getFullYear();
+                          const month = String(date.getMonth() + 1).padStart(2, '0');
+                          const day = String(date.getDate()).padStart(2, '0');
+                          dateInput.value = `${year}-${month}-${day}`;
+                      }
+                  }
+              });
+          }
+
+          function calculateSubtotal(row) {
+              const montoInput = row.querySelector('.monto-input');
+              const ivaInput = row.querySelector('.iva-input');
+              const retencionInput = row.querySelector('.retencion-input');
+              const subtotalInput = row.querySelector('.subtotal-display');
+
+              if (montoInput && ivaInput && retencionInput && subtotalInput) {
+                  // Use unformatNumber to get numeric values from formatted inputs
+                  const monto = unformatNumber(montoInput.value);
+                  const iva = unformatNumber(ivaInput.value);
+                  const retencion = unformatNumber(retencionInput.value);
+
+                  // Subtotal = monto + iva + retencion
+                  const subtotal = monto + iva + retencion;
+
+                  // Format subtotal for display
+                  subtotalInput.value = formatNumber(subtotal);
+                  calculateTotals();
+              }
+          }
+
+          function calculateTotals() {
+              let totalMonto = 0;
+              let totalIva = 0;
+              let totalRetencion = 0;
+              let grandTotal = 0;
+
+              document.querySelectorAll('.item-row').forEach(row => {
+                  const deleteCheckbox = row.querySelector('input[name*="DELETE"]');
+                  if (deleteCheckbox && deleteCheckbox.checked) return;
+
+                  const montoInput = row.querySelector('.monto-input');
+                  const ivaInput = row.querySelector('.iva-input');
+                  const retencionInput = row.querySelector('.retencion-input');
+                  const subtotalInput = row.querySelector('.subtotal-display');
+
+                  if (montoInput && ivaInput && retencionInput && subtotalInput) {
+                      // Use unformatNumber to get numeric values
+                      const monto = unformatNumber(montoInput.value);
+                      const iva = unformatNumber(ivaInput.value);
+                      const retencion = unformatNumber(retencionInput.value);
+                      const subtotal = unformatNumber(subtotalInput.value);
+
+                      totalMonto += monto;
+                      totalIva += iva;
+                      totalRetencion += retencion;
+                      grandTotal += subtotal;
+                  }
+              });
+
+              // Format totals for display
+              document.getElementById('total-subtotal').textContent = formatNumber(totalMonto);
+              document.getElementById('total-iva').textContent = formatNumber(totalIva);
+              document.getElementById('total-retencion').textContent = formatNumber(totalRetencion);
+              document.getElementById('grand-total').textContent = formatNumber(grandTotal);
+          }
+
+          // Event delegation for monto, iva, and retencion changes
+          document.getElementById('item-formset').addEventListener('input', function(e) {
+              if (e.target.classList.contains('monto-input') ||
+                  e.target.classList.contains('iva-input') ||
+                  e.target.classList.contains('retencion-input')) {
+                  const row = e.target.closest('.item-row');
+                  calculateSubtotal(row);
+              }
+          });
+
+          // Add new item form
+          document.getElementById('add-item').addEventListener('click', function() {
+              console.log('=== Add Item button clicked ===');
+              const formsetDiv = document.getElementById('item-formset');
+              const totalForms = document.querySelector('input[name="liquidacionitem_set-TOTAL_FORMS"]');
+              console.log('Current formIndex:', formIndex);
+
+              const newForm = document.createElement('div');
+              newForm.className = 'item-row';
+              newForm.setAttribute('data-form-index', formIndex);
+              newForm.style.cssText = 'border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 5px;';
+              newForm.innerHTML = `
+                  <div class="row g-3">
+                      <div class="col-md-3">
+                          <label class="form-label"><strong>Item:</strong></label>
+                          <div class="autocomplete-wrapper">
+                              <input type="text" class="form-control item-autocomplete" placeholder="Buscar item..." autocomplete="off" tabindex="0">
+                              <input type="hidden" name="liquidacionitem_set-${formIndex}-item" id="id_liquidacionitem_set-${formIndex}-item">
+                              <div class="autocomplete-results" style="display: none;"></div>
+                          </div>
+                      </div>
+                      <div class="col-md-2">
+                          <label class="form-label"><strong>Monto:</strong></label>
+                          <input type="text" name="liquidacionitem_set-${formIndex}-monto" class="form-control monto-input formatted-number" style="text-align:right" placeholder="0">
+                      </div>
+                      <div class="col-md-2">
+                          <label class="form-label"><strong>IVA:</strong></label>
+                          <input type="text" name="liquidacionitem_set-${formIndex}-iva" class="form-control iva-input formatted-number" style="text-align:right" placeholder="0">
+                      </div>
+                      <div class="col-md-2">
+                          <label class="form-label"><strong>Retención:</strong></label>
+                          <input type="text" name="liquidacionitem_set-${formIndex}-retencion" class="form-control retencion-input formatted-number" style="text-align:right" placeholder="0">
+                      </div>
+                      <div class="col-md-2">
+                          <label class="form-label"><strong>Subtotal:</strong></label>
+                          <input type="text" name="liquidacionitem_set-${formIndex}-subtotal" class="form-control subtotal-display formatted-number" style="text-align:right" placeholder="0" readonly>
+                      </div>
+                      <div class="col-md-1">
+                          <label class="form-label">&nbsp;</label><br>
+                          <input type="checkbox" name="liquidacionitem_set-${formIndex}-DELETE" style="display:none;">
+                          <button type="button" class="delete-item btn btn-sm btn-danger" title="Eliminar item">×</button>
+                      </div>
+                  </div>
+                  <input type="hidden" name="liquidacionitem_set-${formIndex}-id">
+              `;
+
+              formsetDiv.appendChild(newForm);
+
+              // Initialize autocomplete for the new form
+              console.log('Looking for autocomplete wrapper in new form...');
+              const newWrapper = newForm.querySelector('.autocomplete-wrapper');
+              console.log('New wrapper found:', newWrapper);
+              if (newWrapper) {
+                  console.log('Initializing autocomplete for new form');
+                  initializeAutocomplete(newWrapper);
+              } else {
+                  console.log('❌ No autocomplete wrapper found in new form');
+              }
+
+              // Initialize number formatting for new fields
+              newForm.querySelectorAll('.formatted-number:not([readonly])').forEach(input => {
+                  input.addEventListener('input', function() {
+                      formatInput(this);
+                      const row = this.closest('.item-row');
+                      if (row) {
+                          calculateSubtotal(row);
+                      }
+                  });
+
+                  input.addEventListener('blur', function() {
+                      formatInput(this);
+                  });
+              });
+
+              totalForms.value = parseInt(totalForms.value) + 1;
+              formIndex++;
+          });
+
+          // Delete item
+          document.getElementById('item-formset').addEventListener('click', function(e) {
+              if (e.target.classList.contains('delete-item')) {
+                  const row = e.target.closest('.item-row');
+                  const deleteCheckbox = row.querySelector('input[name*="DELETE"]');
+
+                  if (deleteCheckbox) {
+                      deleteCheckbox.checked = true;
+                      row.style.display = 'none';
+                      calculateTotals();
+                  } else {
+                      row.remove();
+                      calculateTotals();
+                  }
+              }
+          });
+
+          // Handle form submission - convert formatted values back to decimal numbers
+          document.getElementById('liquidacion-form').addEventListener('submit', function(e) {
+              console.log('=== FORM SUBMISSION STARTED ===');
+              console.log('Form submitting, converting formatted values...');
+
+              // Basic form validation before submission
+              const clienteInput = document.querySelector('input[name="cliente"]');
+              const proveedorInput = document.querySelector('input[name="proveedor"]') || document.querySelector('select[name="proveedor"]');
+              
+              console.log('Validating form fields...');
+              console.log('Cliente input:', clienteInput, 'Value:', clienteInput?.value);
+              console.log('Proveedor input:', proveedorInput, 'Value:', proveedorInput?.value);
+              
+              if (!clienteInput || !clienteInput.value) {
+                  alert('Por favor selecciona un cliente.');
+                  e.preventDefault();
+                  return false;
+              }
+              
+              if (!proveedorInput || !proveedorInput.value) {
+                  alert('Por favor selecciona un proveedor.');
+                  e.preventDefault();
+                  return false;
+              }
+
+              // Convert date format from DD-MM-YYYY to YYYY-MM-DD
+              const fechaInput = document.querySelector('input[name="fecha"]');
+              if (fechaInput && fechaInput.value) {
+                  const originalDate = fechaInput.value;
+                  // Check if it's in DD-MM-YYYY format (contains dashes and isn't YYYY-MM-DD)
+                  if (originalDate.includes('-') && !originalDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                      const parts = originalDate.split('-');
+                      if (parts.length === 3) {
+                          // Convert DD-MM-YYYY to YYYY-MM-DD
+                          const convertedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                          fechaInput.value = convertedDate;
+                          console.log(`Converted fecha: "${originalDate}" -> "${convertedDate}"`);
+                      }
+                  }
+              }
+
+              // Convert formatted number fields back to decimal values for Django
+              // Only convert editable fields (not readonly subtotals)
+              document.querySelectorAll('.formatted-number:not([readonly])').forEach(input => {
+                  if (input.value && input.name) {
+                      const originalValue = input.value;
+                      const numericValue = unformatNumber(input.value);
+                      input.value = numericValue.toString();
+                      console.log(`Converted ${input.name}: "${originalValue}" -> "${numericValue}"`);
+                  }
+              });
+
+              console.log('=== FORM VALUES CONVERTED, SUBMITTING TO DJANGO ===');
+              console.log('Final form data before submission:');
+              const formData = new FormData(e.target);
+              for (let [key, value] of formData.entries()) {
+                  if (!key.includes('csrf')) {
+                      console.log(key + ': ' + value);
+                  }
+              }
+          });
+
+          // Initial calculation for existing forms
+          document.querySelectorAll('.item-row').forEach(row => {
+              calculateSubtotal(row);
+          });
+      });
+    </script>
+  </body>
+</html>
+

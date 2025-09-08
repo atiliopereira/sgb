@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .delete-container {
+            background-color: #fff;
+            border-radius: 0.25rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        .danger-icon {
+            color: #dc3545;
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        .liquidacion-info {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        body {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="delete-container text-center">
+                    <div class="danger-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    
+                    <h2 class="text-danger mb-3">{{ title }}</h2>
+                    
+                    <p class="lead text-muted mb-4">
+                        ¿Está seguro que desea eliminar la siguiente liquidación? Esta acción no se puede deshacer.
+                    </p>
+                    
+                    <div class="liquidacion-info text-start">
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <strong>Número de Liquidación:</strong><br>
+                                {{ liquidacion.numero_liquidacion }}
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <strong>Cliente:</strong><br>
+                                {{ liquidacion.cliente.nombre }}
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <strong>Fecha:</strong><br>
+                                {{ liquidacion.fecha|date:"d/m/Y" }}
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <strong>Número de Despacho:</strong><br>
+                                {{ liquidacion.numero_despacho }}
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <strong>Clase:</strong><br>
+                                {% if liquidacion.clase == 'importacion' %}
+                                    <span class="badge bg-primary">Importación</span>
+                                {% else %}
+                                    <span class="badge bg-success">Exportación</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <strong>Valor Total:</strong><br>
+                                {{ liquidacion.equivalente_gs|floatformat:2 }} Gs.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <form method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-lg me-3">
+                                <i class="fas fa-trash me-2"></i>Sí, Eliminar
+                            </button>
+                        </form>
+                        <a href="{% url 'liquidacion_list' %}" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-times me-2"></i>Cancelar
+                        </a>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <a href="{% url 'liquidacion_detail' liquidacion.pk %}" class="text-decoration-none">
+                                <i class="fas fa-eye me-1"></i>Ver detalles de la liquidación
+                            </a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
