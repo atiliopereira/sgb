@@ -138,14 +138,6 @@
               >
               {{ form.numero_liquidacion }}
             </div>
-            <div class="form-row">
-              <label
-                for="{{ form.numero_despacho.id_for_label }}"
-                class="form-label"
-                >Número de Despacho:</label
-              >
-              {{ form.numero_despacho }}
-            </div>
           </div>
 
           <div class="col-md-6">
@@ -163,6 +155,14 @@
               >
               {{ form.numero_factura_comercial }}
             </div>
+            <div class="form-row">
+              <label
+                for="{{ form.numero_despacho.id_for_label }}"
+                class="form-label"
+                >Número de Despacho:</label
+              >
+              {{ form.numero_despacho }}
+            </div>
           </div>
         </div>
 
@@ -170,7 +170,9 @@
         <h4>Items</h4>
         <div class="alert alert-info">
           <i class="fas fa-info-circle me-2"></i>
-          <strong>Información:</strong> Puedes agregar items a la liquidación utilizando el formulario a continuación o haciendo clic en "Agregar Item" para agregar más items.
+          <strong>Información:</strong> Puedes agregar items a la liquidación
+          utilizando el formulario a continuación o haciendo clic en "Agregar
+          Item" para agregar más items.
         </div>
 
         {{ formset.management_form }}
@@ -329,13 +331,18 @@
                   value="{% if form.instance.proveedor %}{{ form.instance.proveedor.nombre }}{% if form.instance.proveedor.procedencia %} ({{ form.instance.proveedor.procedencia.nombre }}){% else %} (Sin especificar){% endif %}{% endif %}"
                 />
                 {% with form.proveedor as proveedor_widget %}
-                  <select name="{{ proveedor_widget.name }}" id="{{ proveedor_widget.id_for_label }}" style="display: none;">
-                    {% for choice in proveedor_widget %}
-                      {{ choice.tag }}
-                    {% endfor %}
-                  </select>
+                <select
+                  name="{{ proveedor_widget.name }}"
+                  id="{{ proveedor_widget.id_for_label }}"
+                  style="display: none"
+                >
+                  {% for choice in proveedor_widget %}{{ choice.tag }}{% endfor %}
+                </select>
                 {% endwith %}
-                <div class="proveedor-autocomplete-results autocomplete-results" style="display: none;"></div>
+                <div
+                  class="proveedor-autocomplete-results autocomplete-results"
+                  style="display: none"
+                ></div>
               </div>
             </div>
           </div>
@@ -489,6 +496,7 @@
           function selectItem(item, input, hiddenInput, resultsDiv) {
               input.value = item.textContent;
               hiddenInput.value = item.dataset.id;
+              input.dataset.selectedId = item.dataset.id; // Store selected ID for form validation errors
               resultsDiv.style.display = 'none';
           }
 
@@ -755,16 +763,21 @@
           // Function to restore item descriptions after form errors
           function restoreItemDescriptions() {
               document.querySelectorAll('.item-autocomplete').forEach(input => {
-                  const selectedId = input.dataset.selectedId;
                   const hiddenInput = input.parentNode.querySelector('input[name*="item"]');
                   
-                  if (selectedId && hiddenInput && hiddenInput.value && !input.value) {
-                      // Fetch item description if input is empty but has selected ID
-                      fetch(`/liquidaciones/api/item-autocomplete/?q=&id=${selectedId}`)
+                  // Check both hidden input value and data-selected-id attribute
+                  const itemId = hiddenInput?.value || input.dataset.selectedId;
+                  
+                  // If we have an item ID but no visible text, fetch the description
+                  if (itemId && !input.value.trim()) {
+                      console.log(`Restoring item description for item ID: ${itemId}`);
+                      fetch(`/liquidaciones/api/item-autocomplete/?id=${itemId}`)
                           .then(response => response.json())
                           .then(data => {
                               if (data.results && data.results.length > 0) {
                                   input.value = data.results[0].text;
+                                  if (hiddenInput) hiddenInput.value = itemId; // Ensure hidden input is set
+                                  console.log(`Restored item description: ${data.results[0].text}`);
                               }
                           })
                           .catch(error => {
@@ -772,6 +785,28 @@
                           });
                   }
               });
+              
+              // Also restore cliente and proveedor values
+              const clienteInput = document.querySelector('.cliente-autocomplete');
+              const clienteHidden = document.querySelector('input[name="cliente"]');
+              if (clienteInput && clienteHidden && clienteHidden.value && !clienteInput.value.trim()) {
+                  // Check if we have initial value in dataset or try to preserve the value from the server
+                  if (clienteInput.dataset.initialValue) {
+                      clienteInput.value = clienteInput.dataset.initialValue;
+                  } else {
+                      // Try to fetch from server if available
+                      fetch(`/liquidaciones/api/cliente-autocomplete/?id=${clienteHidden.value}`)
+                          .then(response => response.json())
+                          .then(data => {
+                              if (data.results && data.results.length > 0) {
+                                  clienteInput.value = data.results[0].text;
+                              }
+                          })
+                          .catch(error => {
+                              console.log('Could not restore cliente name from API');
+                          });
+                  }
+              }
           }
 
           // Initialize autocomplete for existing forms
@@ -831,8 +866,8 @@
                   const iva = unformatNumber(ivaInput.value);
                   const retencion = unformatNumber(retencionInput.value);
 
-                  // Subtotal = monto + iva + retencion
-                  const subtotal = monto + iva + retencion;
+                  // Subtotal = monto + iva - retencion
+                  const subtotal = monto + iva - retencion;
 
                   // Format subtotal for display
                   subtotalInput.value = formatNumber(subtotal);
@@ -989,17 +1024,17 @@
               // Basic form validation before submission
               const clienteInput = document.querySelector('input[name="cliente"]');
               const proveedorInput = document.querySelector('input[name="proveedor"]') || document.querySelector('select[name="proveedor"]');
-              
+
               console.log('Validating form fields...');
               console.log('Cliente input:', clienteInput, 'Value:', clienteInput?.value);
               console.log('Proveedor input:', proveedorInput, 'Value:', proveedorInput?.value);
-              
+
               if (!clienteInput || !clienteInput.value) {
                   alert('Por favor selecciona un cliente.');
                   e.preventDefault();
                   return false;
               }
-              
+
               if (!proveedorInput || !proveedorInput.value) {
                   alert('Por favor selecciona un proveedor.');
                   e.preventDefault();
@@ -1051,4 +1086,3 @@
     </script>
   </body>
 </html>
-
