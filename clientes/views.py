@@ -1,10 +1,14 @@
 from decimal import Decimal
 
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db import models
 
 from liquidaciones.models import Liquidacion, Pago
 
 from .models import Cliente
+from .forms import ClienteForm
 
 
 def estado_cuenta(request, cliente_id):
@@ -76,3 +80,113 @@ def estado_cuenta(request, cliente_id):
     }
 
     return render(request, "clientes/estado_cuenta.html", context)
+
+
+def cliente_list(request):
+    clientes = Cliente.objects.all().order_by('nombre')
+    
+    # Search functionality
+    search = request.GET.get('search', '')
+    if search:
+        clientes = clientes.filter(
+            models.Q(nombre__icontains=search) |
+            models.Q(ruc__icontains=search) |
+            models.Q(email__icontains=search)
+        )
+    
+    # Pagination
+    paginator = Paginator(clientes, 10)  # Show 10 clientes per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'search': search,
+        'title': 'Lista de Clientes'
+    }
+    return render(request, 'clientes/cliente_list.html', context)
+
+
+def cliente_create(request):
+    if request.method == 'POST':
+        form = ClienteForm(request.POST)
+        
+        if form.is_valid():
+            try:
+                cliente = form.save()
+                messages.success(request, f'Cliente {cliente.nombre} creado exitosamente.')
+                return redirect('clientes:cliente_list')
+                
+            except Exception as e:
+                print(f"❌ ERROR DURING CLIENTE SAVE: {e}")
+                import traceback
+                traceback.print_exc()
+                messages.error(request, 'Error al crear el cliente.')
+        else:
+            print("=== CLIENTE FORM VALIDATION FAILED ===")
+            print("Form errors:", dict(form.errors))
+            if form.errors:
+                messages.error(request, f'Error en el formulario: {form.errors}')
+    else:
+        form = ClienteForm()
+    
+    context = {
+        'form': form,
+        'title': 'Crear Cliente'
+    }
+    return render(request, 'clientes/cliente_form.html', context)
+
+
+def cliente_detail(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk)
+    return render(request, 'clientes/cliente_detail.html', {'cliente': cliente})
+
+
+def cliente_edit(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk)
+    
+    if request.method == 'POST':
+        form = ClienteForm(request.POST, instance=cliente)
+        
+        if form.is_valid():
+            try:
+                cliente = form.save()
+                messages.success(request, 'Cliente actualizado exitosamente.')
+                return redirect('clientes:cliente_detail', pk=cliente.pk)
+                
+            except Exception as e:
+                print(f"❌ ERROR DURING CLIENTE UPDATE: {e}")
+                import traceback
+                traceback.print_exc()
+                messages.error(request, 'Error al actualizar el cliente.')
+        else:
+            print("=== CLIENTE FORM VALIDATION FAILED ===")
+            print("Form errors:", dict(form.errors))
+            if form.errors:
+                messages.error(request, f'Error en el formulario: {form.errors}')
+    else:
+        form = ClienteForm(instance=cliente)
+    
+    context = {
+        'form': form,
+        'title': f'Editar Cliente {cliente.nombre}',
+        'cliente': cliente,
+        'is_edit': True
+    }
+    return render(request, 'clientes/cliente_form.html', context)
+
+
+def cliente_delete(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk)
+    
+    if request.method == 'POST':
+        nombre_cliente = cliente.nombre
+        cliente.delete()
+        messages.success(request, f'Cliente {nombre_cliente} eliminado exitosamente.')
+        return redirect('clientes:cliente_list')
+    
+    context = {
+        'cliente': cliente,
+        'title': 'Eliminar Cliente'
+    }
+    return render(request, 'clientes/cliente_confirm_delete.html', context)

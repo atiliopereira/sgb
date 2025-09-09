@@ -1,3 +1,4 @@
+{% load currency_filters %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -116,10 +117,10 @@
                                     <td>{{ entry.oc }}</td>
                                     <td>{{ entry.bco }}</td>
                                     <td>{{ entry.referencia }}</td>
-                                    <td class="text-end currency">{% if entry.pagos %}{{ entry.pagos|floatformat:0 }}{% endif %}</td>
-                                    <td class="text-end currency">{% if entry.liquidacion %}{{ entry.liquidacion|floatformat:0 }}{% endif %}</td>
+                                    <td class="text-end currency">{% if entry.pagos %}{{ entry.pagos|currency_format }}{% endif %}</td>
+                                    <td class="text-end currency">{% if entry.liquidacion %}{{ entry.liquidacion|currency_format }}{% endif %}</td>
                                     <td class="text-end currency {% if entry.saldo > 0 %}positive-balance{% elif entry.saldo < 0 %}negative-balance{% else %}zero-balance{% endif %}">
-                                        {{ entry.saldo|floatformat:0 }}
+                                        {{ entry.saldo|currency_format }}
                                     </td>
                                 </tr>
                                 {% empty %}
@@ -134,10 +135,10 @@
                                 {% if account_entries %}
                                 <tr class="totals-row">
                                     <td colspan="6" class="text-end"><strong>TOTALES:</strong></td>
-                                    <td class="text-end currency"><strong>{{ total_pagos|floatformat:0 }}</strong></td>
-                                    <td class="text-end currency"><strong>{{ total_liquidaciones|floatformat:0 }}</strong></td>
+                                    <td class="text-end currency"><strong>{{ total_pagos|currency_format }}</strong></td>
+                                    <td class="text-end currency"><strong>{{ total_liquidaciones|currency_format }}</strong></td>
                                     <td class="text-end currency {% if total_saldo > 0 %}positive-balance{% elif total_saldo < 0 %}negative-balance{% else %}zero-balance{% endif %}">
-                                        <strong>{{ total_saldo|floatformat:0 }}</strong>
+                                        <strong>{{ total_saldo|currency_format }}</strong>
                                     </td>
                                 </tr>
                                 {% endif %}
@@ -160,19 +161,19 @@
                             <div class="col-md-4">
                                 <div class="text-center p-3 bg-primary text-white rounded">
                                     <h6>Total Pagos</h6>
-                                    <h4 class="currency">{{ total_pagos|floatformat:0 }}</h4>
+                                    <h4 class="currency">{{ total_pagos|currency_format }}</h4>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="text-center p-3 bg-info text-white rounded">
                                     <h6>Total Liquidaciones</h6>
-                                    <h4 class="currency">{{ total_liquidaciones|floatformat:0 }}</h4>
+                                    <h4 class="currency">{{ total_liquidaciones|currency_format }}</h4>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="text-center p-3 {% if total_saldo > 0 %}bg-success{% elif total_saldo < 0 %}bg-danger{% else %}bg-secondary{% endif %} text-white rounded">
                                     <h6>Saldo Final</h6>
-                                    <h4 class="currency">{{ total_saldo|floatformat:0 }}</h4>
+                                    <h4 class="currency">{{ total_saldo|currency_format }}</h4>
                                 </div>
                             </div>
                         </div>
@@ -187,7 +188,7 @@
                 <button onclick="window.print()" class="btn btn-primary btn-lg me-3">
                     <i class="fas fa-print me-2"></i>Imprimir
                 </button>
-                <a href="/admin/clientes/cliente/" class="btn btn-secondary btn-lg">
+                <a href="/clientes/" class="btn btn-secondary btn-lg">
                     <i class="fas fa-users me-2"></i>Ver Todos los Clientes
                 </a>
             </div>
@@ -201,5 +202,45 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          // Format numbers with thousands separators (Paraguay format: dots as separators)
+          function formatNumber(num) {
+              // Convert to integer and format with thousands separators
+              const intValue = Math.round(parseFloat(num) || 0);
+              return intValue.toLocaleString('es-PY'); // Paraguay locale for thousands separator
+          }
+
+          // Format all currency values in the table
+          document.querySelectorAll('.currency').forEach(function(element) {
+              const text = element.textContent.trim();
+              // Check if it's a number (could be empty or have decimal places)
+              if (text && !isNaN(text.replace(/[.,]/g, '')) && text.match(/^-?\d+([.,]\d+)?$/)) {
+                  const num = parseFloat(text.replace(/[.,]/g, ''));
+                  if (!isNaN(num)) {
+                      element.textContent = formatNumber(Math.abs(num));
+                      // Preserve negative sign if needed
+                      if (num < 0) {
+                          element.textContent = '-' + element.textContent;
+                      }
+                  }
+              }
+          });
+
+          // Format summary cards numbers
+          document.querySelectorAll('.card .currency').forEach(function(element) {
+              const text = element.textContent.trim();
+              if (text && !isNaN(text.replace(/[.,]/g, '')) && text.match(/^-?\d+([.,]\d+)?$/)) {
+                  const num = parseFloat(text.replace(/[.,]/g, ''));
+                  if (!isNaN(num)) {
+                      element.textContent = formatNumber(Math.abs(num));
+                      if (num < 0) {
+                          element.textContent = '-' + element.textContent;
+                      }
+                  }
+              }
+          });
+      });
+    </script>
 </body>
 </html>
