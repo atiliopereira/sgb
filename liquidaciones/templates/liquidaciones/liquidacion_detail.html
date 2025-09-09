@@ -223,12 +223,38 @@
                                 </span>
                             </div>
                         </div>
+                        {% if liquidacion.planilla_gastos %}
                         <div class="col-md-3">
-                            <div class="text-center border-start">
+                            <div class="text-center">
+                                <strong>Total Planilla Gastos:</strong><br>
+                                <span class="h5 text-info">
+                                    {{ liquidacion.planilla_gastos.total_gastos|format_guaranies }}
+                                </span>
+                                <br>
+                                <small class="text-muted">
+                                    <a href="{% url 'planilla_gastos_detail' liquidacion.planilla_gastos.pk %}" class="text-decoration-none">
+                                        {{ liquidacion.planilla_gastos.numero_planilla }}
+                                    </a>
+                                </small>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Total General -->
+                    <div class="row mt-3 pt-3 border-top">
+                        <div class="col-12">
+                            <div class="text-center">
                                 <strong>Total General:</strong><br>
-                                <span class="h4 text-dark fw-bold">
+                                <span class="h3 text-dark fw-bold">
                                     {{ liquidacion.valor_total_calculado|format_guaranies }}
                                 </span>
+                                {% if liquidacion.planilla_gastos %}
+                                <br>
+                                <small class="text-muted">
+                                    (Incluye items + planilla de gastos)
+                                </small>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

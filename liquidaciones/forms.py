@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory
-from .models import Liquidacion, LiquidacionItem, Proveedor, Pago, Banco, Procedencia
+from .models import Liquidacion, LiquidacionItem, Proveedor, Pago, Banco, Procedencia, PlanillaGastos, PlanillaGastosItem
 from items.models import Item
 
 
@@ -26,6 +26,7 @@ class LiquidacionForm(forms.ModelForm):
                 'data-live-search': 'true',
                 'data-size': '5'
             }),
+            'planilla_gastos': forms.HiddenInput(),
         }
 
     def __init__(self, *args, **kwargs):
@@ -187,3 +188,84 @@ class ProveedorForm(forms.ModelForm):
         self.fields['procedencia'].label = 'Procedencia'
         self.fields['procedencia'].required = False
         self.fields['procedencia'].queryset = Procedencia.objects.all().order_by('nombre')
+
+
+class PlanillaGastosForm(forms.ModelForm):
+    class Meta:
+        model = PlanillaGastos
+        fields = ['fecha', 'numero_planilla']
+        widgets = {
+            'fecha': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'numero_planilla': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ingrese el número de planilla'
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['fecha'].label = 'Fecha'
+        self.fields['numero_planilla'].label = 'Número de Planilla'
+
+
+class PlanillaGastosItemForm(forms.ModelForm):
+    class Meta:
+        model = PlanillaGastosItem
+        fields = ['descripcion', 'monto']
+        widgets = {
+            'descripcion': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Descripción del gasto'
+            }),
+            'monto': forms.TextInput(attrs={
+                'class': 'form-control formatted-number',
+                'style': 'text-align:right',
+                'placeholder': '0',
+                'data-original-value': ''
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['descripcion'].label = 'Descripción'
+        self.fields['monto'].label = 'Monto'
+        
+        # Make fields optional for formset validation
+        self.fields['descripcion'].required = False
+        self.fields['monto'].required = False
+        
+    
+    def clean_monto(self):
+        monto = self.cleaned_data.get('monto')
+        
+        if isinstance(monto, str) and monto.strip():
+            # Handle both Paraguay formatting and plain numbers
+            cleaned_monto = monto.strip()
+            
+            # If it contains dots and/or commas, assume Paraguay format
+            if '.' in cleaned_monto or ',' in cleaned_monto:
+                # Remove Paraguay formatting (dots for thousands, comma for decimal)
+                cleaned_monto = cleaned_monto.replace('.', '').replace(',', '.')
+            
+            try:
+                from decimal import Decimal
+                return Decimal(cleaned_monto)
+            except (ValueError, TypeError):
+                raise forms.ValidationError('Ingrese un monto válido')
+        elif monto == '' or monto is None:
+            from decimal import Decimal
+            return Decimal('0')
+        
+        return monto
+
+
+PlanillaGastosItemFormSet = inlineformset_factory(
+    PlanillaGastos,
+    PlanillaGastosItem,
+    form=PlanillaGastosItemForm,
+    extra=0,  # No extra forms by default
+    can_delete=True
+)

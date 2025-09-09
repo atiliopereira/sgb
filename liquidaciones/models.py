@@ -49,6 +49,7 @@ class Liquidacion(models.Model):
     equivalente_gs = models.DecimalField(max_digits=12, decimal_places=2)
     tipo_cambio = models.CharField(max_length=20)
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE)
+    planilla_gastos = models.ForeignKey('PlanillaGastos', on_delete=models.SET_NULL, null=True, blank=True)
 
     @property
     def procedencia(self):
@@ -74,8 +75,11 @@ class Liquidacion(models.Model):
     def valor_total_calculado(self):
         """
         Calcula el valor total como la suma de subtotales de todos los items de la liquidación
+        más el total de gastos de la planilla (si existe)
         """
-        return sum(item.subtotal for item in self.liquidacionitem_set.all())
+        total_items = sum(item.subtotal for item in self.liquidacionitem_set.all())
+        total_gastos = self.planilla_gastos.total_gastos if self.planilla_gastos else 0
+        return total_items + total_gastos
 
     def __str__(self):
         return f"Liquidación {self.numero_liquidacion} - {self.cliente.nombre}"
@@ -128,3 +132,34 @@ class Pago(models.Model):
 
     def __str__(self):
         return f"Pago {self.numero_despacho} - {self.monto} ({self.fecha})"
+
+
+class PlanillaGastos(models.Model):
+    fecha = models.DateField()
+    numero_planilla = models.CharField(max_length=50, unique=True)
+
+    class Meta:
+        ordering = ["-fecha"]
+        verbose_name = "Planilla de Gastos"
+        verbose_name_plural = "Planillas de Gastos"
+
+    @property
+    def total_gastos(self):
+        """Suma de todos los montos de los gastos de la planilla"""
+        return sum(gasto.monto for gasto in self.planillagastositem_set.all())
+
+    def __str__(self):
+        return f"Planilla {self.numero_planilla} - {self.fecha}"
+
+
+class PlanillaGastosItem(models.Model):
+    planilla_gastos = models.ForeignKey(PlanillaGastos, on_delete=models.CASCADE)
+    descripcion = models.CharField(max_length=255)
+    monto = models.DecimalField(max_digits=12, decimal_places=2)
+
+    class Meta:
+        verbose_name = "Item de Planilla de Gastos"
+        verbose_name_plural = "Items de Planilla de Gastos"
+
+    def __str__(self):
+        return f"{self.descripcion} - {self.monto}"

@@ -7,8 +7,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from clientes.models import Cliente
 from items.models import Item
 
-from .forms import LiquidacionForm, LiquidacionItemFormSet, PagoForm, BancoForm, ProcedenciaForm, ProveedorForm
-from .models import Banco, Liquidacion, LiquidacionItem, Pago, Proveedor, Procedencia
+from .forms import LiquidacionForm, LiquidacionItemFormSet, PagoForm, BancoForm, ProcedenciaForm, ProveedorForm, PlanillaGastosForm, PlanillaGastosItemFormSet
+from .models import Banco, Liquidacion, LiquidacionItem, Pago, Proveedor, Procedencia, PlanillaGastos
 
 
 def liquidacion_create(request):
@@ -180,7 +180,9 @@ def liquidacion_edit(request, pk):
                         print(f"✅ Updated item: {instance.item}")
 
                 # Delete items marked for deletion
-                for obj in formset.deleted_objects:
+                print(f"Items marked for deletion: {len(formset.deleted_objects)}")
+                for i, obj in enumerate(formset.deleted_objects):
+                    print(f"Deleting item {i}: {obj.descripcion} - {obj.monto}")
                     obj.delete()
                     print(f"✅ Deleted item: {obj}")
 
@@ -971,4 +973,261 @@ def procedencia_delete(request, pk):
     
     context = {"procedencia": procedencia, "title": "Eliminar Procedencia"}
     return render(request, "liquidaciones/procedencia_confirm_delete.html", context)
+
+
+# PlanillaGastos CRUD Views
+def planilla_gastos_list(request):
+    planillas = PlanillaGastos.objects.all().order_by("-fecha")
+    
+    # Search functionality
+    search = request.GET.get("search", "")
+    if search:
+        planillas = planillas.filter(
+            models.Q(numero_planilla__icontains=search)
+        )
+    
+    # Pagination
+    paginator = Paginator(planillas, 10)  # Show 10 planillas per page
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        "page_obj": page_obj,
+        "search": search,
+        "title": "Lista de Planillas de Gastos"
+    }
+    return render(request, "liquidaciones/planilla_gastos_list.html", context)
+
+
+def planilla_gastos_create(request):
+    if request.method == "POST":
+        print("=== PLANILLA GASTOS CREATE VIEW CALLED ===")
+        print("Request method:", request.method)
+        print("POST data keys:", list(request.POST.keys()))
+        print("POST data values:", {k: v for k, v in request.POST.items() if k != "csrfmiddlewaretoken"})
+        
+        form = PlanillaGastosForm(request.POST)
+        formset = PlanillaGastosItemFormSet(request.POST)
+        
+        print("Form valid:", form.is_valid())
+        if not form.is_valid():
+            print("Form errors:", dict(form.errors))
+
+        print("Formset valid:", formset.is_valid())
+        if not formset.is_valid():
+            print("Formset errors:", [dict(f.errors) for f in formset])
+            print("Formset non_form_errors:", formset.non_form_errors())
+        
+        if form.is_valid() and formset.is_valid():
+            try:
+                planilla = form.save()
+                
+                # Only save forms that have a description
+                instances = formset.save(commit=False)
+                print(f"✅ Formset instances to process: {len(instances)}")
+                saved_items = []
+                
+                for i, instance in enumerate(instances):
+                    print(f"Processing instance {i}: descripcion='{instance.descripcion}', monto='{instance.monto}'")
+                    if instance.descripcion:  # Only save if description is provided
+                        instance.planilla_gastos = planilla
+                        # Ensure numeric fields have default values if empty
+                        if not instance.monto:
+                            instance.monto = 0
+                        instance.save()
+                        saved_items.append(instance)
+                        print(f"✅ Saved instance {i}: {instance.descripcion}")
+                    else:
+                        print(f"⚠️ Skipping instance {i}: no description")
+                
+                # Also handle formset deletions
+                for obj in formset.deleted_objects:
+                    obj.delete()
+                
+                # Show appropriate message
+                if saved_items:
+                    messages.success(
+                        request,
+                        f"Planilla de Gastos {planilla.numero_planilla} creada exitosamente con {len(saved_items)} item(s).",
+                    )
+                else:
+                    messages.success(
+                        request,
+                        f"Planilla de Gastos {planilla.numero_planilla} creada exitosamente.",
+                    )
+                    messages.info(
+                        request,
+                        "No se agregaron items a esta planilla. Puedes editarla para agregar items más tarde.",
+                    )
+                
+                return redirect("planilla_gastos_list")
+                
+            except Exception as e:
+                print(f"❌ ERROR DURING PLANILLA GASTOS SAVE: {e}")
+                import traceback
+                traceback.print_exc()
+                messages.error(request, f"Error al guardar la planilla: {e}")
+        else:
+            if not form.is_valid():
+                messages.error(request, f"Error en el formulario principal: {form.errors}")
+            if not formset.is_valid():
+                messages.error(request, f"Error en los items: {formset.errors}")
+    else:
+        form = PlanillaGastosForm()
+        # For create, we want one empty form to start with
+        formset = PlanillaGastosItemFormSet(queryset=PlanillaGastosItem.objects.none())
+        formset.extra = 1
+    
+    context = {"form": form, "formset": formset, "title": "Crear Planilla de Gastos"}
+    return render(request, "liquidaciones/planilla_gastos_form.html", context)
+
+
+def planilla_gastos_detail(request, pk):
+    planilla = get_object_or_404(PlanillaGastos, pk=pk)
+    return render(request, "liquidaciones/planilla_gastos_detail.html", {"planilla": planilla})
+
+
+def planilla_gastos_edit(request, pk):
+    planilla = get_object_or_404(PlanillaGastos, pk=pk)
+    
+    if request.method == "POST":
+        print(f"=== PLANILLA GASTOS EDIT VIEW CALLED (PK: {pk}) ===")
+        print("Request method:", request.method)
+        print("POST data keys:", list(request.POST.keys()))
+        print("POST data values:", {k: v for k, v in request.POST.items() if k != "csrfmiddlewaretoken"})
+        
+        form = PlanillaGastosForm(request.POST, instance=planilla)
+        formset = PlanillaGastosItemFormSet(request.POST, instance=planilla)
+        
+        print("Form valid:", form.is_valid())
+        if not form.is_valid():
+            print("Form errors:", dict(form.errors))
+
+        # Check formset forms before validation
+        print(f"Number of forms in formset: {len(formset.forms)}")
+        for i, form_instance in enumerate(formset.forms):
+            print(f"Form {i} initial data: {form_instance.initial}")
+            if hasattr(form_instance, 'instance') and form_instance.instance.pk:
+                print(f"Form {i} instance: {form_instance.instance.pk} - {form_instance.instance}")
+
+        print("Formset valid:", formset.is_valid())
+        if not formset.is_valid():
+            print("Formset errors:", [dict(f.errors) for f in formset])
+            print("Formset non_form_errors:", formset.non_form_errors())
+            # Check individual form validity
+            for i, form_instance in enumerate(formset.forms):
+                print(f"Form {i} valid: {form_instance.is_valid()}")
+                if not form_instance.is_valid():
+                    print(f"Form {i} errors: {dict(form_instance.errors)}")
+                print(f"Form {i} cleaned_data: {getattr(form_instance, 'cleaned_data', 'No cleaned_data')}")
+        
+        if form.is_valid() and formset.is_valid():
+            try:
+                planilla = form.save()
+                
+                # Only save non-empty forms
+                instances = formset.save(commit=False)
+                print(f"✅ Formset instances to process: {len(instances)}")
+                
+                # Also check what forms were processed
+                print("Formset forms that will be processed:")
+                for i, form_instance in enumerate(formset.forms):
+                    if hasattr(form_instance, 'cleaned_data'):
+                        descripcion = form_instance.cleaned_data.get('descripcion', '')
+                        monto = form_instance.cleaned_data.get('monto', '')
+                        delete_checked = form_instance.cleaned_data.get('DELETE', False)
+                        print(f"Form {i}: descripcion='{descripcion}', monto='{monto}', DELETE={delete_checked}")
+                
+                saved_items = []
+                for i, instance in enumerate(instances):
+                    print(f"Processing instance {i}: descripcion='{instance.descripcion}', monto='{instance.monto}', pk='{instance.pk}'")
+                    if instance.descripcion:  # Only save if description is provided
+                        # Ensure numeric fields have default values if empty
+                        if not instance.monto:
+                            instance.monto = 0
+                        instance.save()
+                        saved_items.append(instance)
+                        print(f"✅ Saved instance {i}: {instance.descripcion}")
+                    else:
+                        print(f"⚠️ Skipping instance {i}: no description")
+                
+                # Delete items marked for deletion
+                print(f"Items marked for deletion: {len(formset.deleted_objects)}")
+                for i, obj in enumerate(formset.deleted_objects):
+                    print(f"Deleting item {i}: {obj.descripcion} - {obj.monto}")
+                    obj.delete()
+                
+                messages.success(request, "Planilla de Gastos actualizada exitosamente.")
+                return redirect("planilla_gastos_detail", pk=planilla.pk)
+                
+            except Exception as e:
+                print(f"❌ ERROR DURING PLANILLA GASTOS UPDATE: {e}")
+                import traceback
+                traceback.print_exc()
+                messages.error(request, f"Error al actualizar la planilla: {e}")
+        else:
+            if not form.is_valid():
+                messages.error(request, f"Error en el formulario principal: {form.errors}")
+            if not formset.is_valid():
+                messages.error(request, f"Error en los items: {formset.errors}")
+    else:
+        form = PlanillaGastosForm(instance=planilla)
+        # For edit, only show existing items, no extra forms
+        formset = PlanillaGastosItemFormSet(instance=planilla)
+        formset.extra = 0
+    
+    context = {
+        "form": form,
+        "formset": formset,
+        "title": f"Editar Planilla de Gastos {planilla.numero_planilla}",
+        "planilla": planilla,
+        "is_edit": True,
+    }
+    return render(request, "liquidaciones/planilla_gastos_form.html", context)
+
+
+def planilla_gastos_delete(request, pk):
+    planilla = get_object_or_404(PlanillaGastos, pk=pk)
+    
+    if request.method == "POST":
+        numero_planilla = planilla.numero_planilla
+        planilla.delete()
+        messages.success(request, f"Planilla de Gastos {numero_planilla} eliminada exitosamente.")
+        return redirect("planilla_gastos_list")
+    
+    context = {"planilla": planilla, "title": "Eliminar Planilla de Gastos"}
+    return render(request, "liquidaciones/planilla_gastos_confirm_delete.html", context)
+
+
+def planilla_gastos_autocomplete(request):
+    query = request.GET.get("q", "")
+    planilla_id = request.GET.get("id", "")
+    
+    if planilla_id:
+        # Fetch specific planilla by ID for restoration after form errors
+        try:
+            planilla = PlanillaGastos.objects.get(id=planilla_id)
+            results = [
+                {
+                    "id": planilla.id,
+                    "text": f"{planilla.numero_planilla} - {planilla.fecha} (Total: {planilla.total_gastos:,.0f})",
+                }
+            ]
+        except PlanillaGastos.DoesNotExist:
+            results = []
+    elif query:
+        planillas = PlanillaGastos.objects.filter(
+            numero_planilla__icontains=query
+        )[:10]
+        results = [
+            {
+                "id": planilla.id,
+                "text": f"{planilla.numero_planilla} - {planilla.fecha} (Total: {planilla.total_gastos:,.0f})",
+            }
+            for planilla in planillas
+        ]
+    else:
+        results = []
+    
+    return JsonResponse({"results": results})
 

@@ -53,7 +53,8 @@
       }
       .item-autocomplete,
       .cliente-autocomplete,
-      .proveedor-autocomplete {
+      .proveedor-autocomplete,
+      .planilla-gastos-autocomplete {
         pointer-events: auto !important;
         user-select: text !important;
         -webkit-user-select: text !important;
@@ -64,7 +65,8 @@
       }
       .item-autocomplete:focus,
       .cliente-autocomplete:focus,
-      .proveedor-autocomplete:focus {
+      .proveedor-autocomplete:focus,
+      .planilla-gastos-autocomplete:focus {
         border-color: #86b7fe !important;
         outline: 0 !important;
         box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
@@ -341,6 +343,24 @@
                 {% endwith %}
                 <div
                   class="proveedor-autocomplete-results autocomplete-results"
+                  style="display: none"
+                ></div>
+              </div>
+            </div>
+            <div class="form-row">
+              <label for="planilla_gastos_input" class="form-label">Planilla de Gastos (Opcional):</label>
+              <div class="autocomplete-wrapper">
+                <input
+                  type="text"
+                  id="planilla_gastos_input"
+                  class="form-control planilla-gastos-autocomplete"
+                  placeholder="Buscar planilla de gastos..."
+                  autocomplete="off"
+                  value="{% if form.instance.planilla_gastos %}{{ form.instance.planilla_gastos.numero_planilla }} - {{ form.instance.planilla_gastos.fecha }}: {{ form.instance.planilla_gastos.total_gastos|floatformat:0 }}{% endif %}"
+                />
+                {{ form.planilla_gastos }}
+                <div
+                  class="planilla-gastos-autocomplete-results autocomplete-results"
                   style="display: none"
                 ></div>
               </div>
@@ -706,6 +726,118 @@
               resultsDiv.style.display = 'none';
           }
 
+          // PlanillaGastos Autocomplete functionality
+          function initializePlanillaGastosAutocomplete(wrapper) {
+              console.log('=== initializePlanillaGastosAutocomplete called ===');
+              const input = wrapper.querySelector('.planilla-gastos-autocomplete');
+              const hiddenInput = wrapper.querySelector('input[name="planilla_gastos"]');
+              const resultsDiv = wrapper.querySelector('.planilla-gastos-autocomplete-results');
+              let selectedIndex = -1;
+              let searchTimeout;
+
+              if (!input || !hiddenInput || !resultsDiv) {
+                  console.log('❌ Missing planilla gastos autocomplete elements');
+                  return;
+              }
+
+              console.log('✅ PlanillaGastos autocomplete elements found');
+
+              input.addEventListener('input', function() {
+                  const query = this.value.trim();
+                  selectedIndex = -1;
+
+                  clearTimeout(searchTimeout);
+
+                  if (query.length < 2) {
+                      resultsDiv.style.display = 'none';
+                      hiddenInput.value = '';
+                      return;
+                  }
+
+                  searchTimeout = setTimeout(() => {
+                      console.log('Fetching planilla gastos autocomplete for query:', query);
+                      fetch(`/liquidaciones/api/planilla-gastos-autocomplete/?q=${encodeURIComponent(query)}`)
+                          .then(response => response.json())
+                          .then(data => {
+                              console.log('PlanillaGastos autocomplete data received:', data);
+                              displayPlanillaGastosResults(data.results, resultsDiv, input, hiddenInput);
+                          })
+                          .catch(error => {
+                              console.error('Error fetching planilla gastos autocomplete:', error);
+                              resultsDiv.style.display = 'none';
+                          });
+                  }, 300);
+              });
+
+              input.addEventListener('keydown', function(e) {
+                  const items = resultsDiv.querySelectorAll('.autocomplete-item');
+                  if (items.length === 0) return;
+
+                  if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      selectedIndex = (selectedIndex + 1) % items.length;
+                      updatePlanillaGastosSelection(items, selectedIndex);
+                  } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+                      updatePlanillaGastosSelection(items, selectedIndex);
+                  } else if (e.key === 'Enter' && selectedIndex >= 0) {
+                      e.preventDefault();
+                      selectPlanillaGastosItem(items[selectedIndex], input, hiddenInput, resultsDiv);
+                  } else if (e.key === 'Escape') {
+                      resultsDiv.style.display = 'none';
+                      selectedIndex = -1;
+                  }
+              });
+
+              input.addEventListener('blur', function() {
+                  setTimeout(() => {
+                      if (!resultsDiv.matches(':hover')) {
+                          resultsDiv.style.display = 'none';
+                      }
+                  }, 100);
+              });
+          }
+
+          function displayPlanillaGastosResults(results, resultsDiv, input, hiddenInput) {
+              if (results.length === 0) {
+                  resultsDiv.style.display = 'none';
+                  return;
+              }
+
+              resultsDiv.innerHTML = '';
+              results.forEach((planilla, index) => {
+                  const div = document.createElement('div');
+                  div.className = 'autocomplete-item';
+                  div.textContent = planilla.text;
+                  div.dataset.id = planilla.id;
+
+                  div.addEventListener('click', () => {
+                      selectPlanillaGastosItem(div, input, hiddenInput, resultsDiv);
+                  });
+
+                  resultsDiv.appendChild(div);
+              });
+
+              resultsDiv.style.display = 'block';
+          }
+
+          function updatePlanillaGastosSelection(items, selectedIndex) {
+              items.forEach((item, index) => {
+                  if (index === selectedIndex) {
+                      item.classList.add('selected');
+                  } else {
+                      item.classList.remove('selected');
+                  }
+              });
+          }
+
+          function selectPlanillaGastosItem(item, input, hiddenInput, resultsDiv) {
+              input.value = item.textContent;
+              hiddenInput.value = item.dataset.id;
+              resultsDiv.style.display = 'none';
+          }
+
           // Number formatting functions
           function formatNumber(num) {
               // Convert to integer and format with thousands separators
@@ -821,6 +953,9 @@
               } else if (wrapper.querySelector('.proveedor-autocomplete')) {
                   console.log('Initializing proveedor autocomplete for wrapper:', wrapper);
                   initializeProveedorAutocomplete(wrapper);
+              } else if (wrapper.querySelector('.planilla-gastos-autocomplete')) {
+                  console.log('Initializing planilla gastos autocomplete for wrapper:', wrapper);
+                  initializePlanillaGastosAutocomplete(wrapper);
               }
           });
 
