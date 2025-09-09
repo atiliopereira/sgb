@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory
-from .models import Liquidacion, LiquidacionItem, Proveedor, Pago, Banco
+from .models import Liquidacion, LiquidacionItem, Proveedor, Pago, Banco, Procedencia
 from items.models import Item
 
 
@@ -125,3 +125,65 @@ class PagoForm(forms.ModelForm):
         self.fields['banco'].queryset = Banco.objects.all()
         self.fields['referencia'].required = False
         self.fields['concepto'].required = False
+
+
+class BancoForm(forms.ModelForm):
+    class Meta:
+        model = Banco
+        fields = ['nombre', 'titular', 'numero_cuenta']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ingrese el nombre del banco'
+            }),
+            'titular': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ingrese el titular de la cuenta'
+            }),
+            'numero_cuenta': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ingrese el número de cuenta'
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['nombre'].label = 'Nombre del Banco'
+        self.fields['titular'].label = 'Titular de la Cuenta'
+        self.fields['numero_cuenta'].label = 'Número de Cuenta'
+
+
+class ProcedenciaForm(forms.ModelForm):
+    class Meta:
+        model = Procedencia
+        fields = ['nombre']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ingrese el nombre del país/procedencia'
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['nombre'].label = 'Nombre'
+
+
+class ProveedorForm(forms.ModelForm):
+    class Meta:
+        model = Proveedor
+        fields = ['nombre', 'procedencia']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ingrese el nombre del proveedor'
+            }),
+            'procedencia': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['nombre'].label = 'Nombre del Proveedor'
+        self.fields['procedencia'].label = 'Procedencia'
+        self.fields['procedencia'].required = False
+        self.fields['procedencia'].queryset = Procedencia.objects.all().order_by('nombre')

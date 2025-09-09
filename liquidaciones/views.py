@@ -7,8 +7,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from clientes.models import Cliente
 from items.models import Item
 
-from .forms import LiquidacionForm, LiquidacionItemFormSet, PagoForm
-from .models import Banco, Liquidacion, LiquidacionItem, Pago, Proveedor
+from .forms import LiquidacionForm, LiquidacionItemFormSet, PagoForm, BancoForm, ProcedenciaForm, ProveedorForm
+from .models import Banco, Liquidacion, LiquidacionItem, Pago, Proveedor, Procedencia
 
 
 def liquidacion_create(request):
@@ -703,3 +703,272 @@ def pago_delete(request, pk):
 
     context = {"pago": pago, "title": "Eliminar Pago"}
     return render(request, "liquidaciones/pago_confirm_delete.html", context)
+
+
+# Banco CRUD Views
+def banco_list(request):
+    bancos = Banco.objects.all().order_by("nombre")
+    
+    # Search functionality
+    search = request.GET.get("search", "")
+    if search:
+        bancos = bancos.filter(
+            models.Q(nombre__icontains=search) |
+            models.Q(titular__icontains=search) |
+            models.Q(numero_cuenta__icontains=search)
+        )
+    
+    # Pagination
+    paginator = Paginator(bancos, 10)  # Show 10 bancos per page
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        "page_obj": page_obj,
+        "search": search,
+        "title": "Lista de Bancos"
+    }
+    return render(request, "liquidaciones/banco_list.html", context)
+
+
+def banco_create(request):
+    if request.method == "POST":
+        form = BancoForm(request.POST)
+        
+        if form.is_valid():
+            try:
+                banco = form.save()
+                messages.success(request, f"Banco {banco.nombre} creado exitosamente.")
+                return redirect("banco_list")
+            except Exception as e:
+                messages.error(request, f"Error al crear el banco: {e}")
+        else:
+            messages.error(request, "Error en el formulario. Por favor corrige los errores.")
+    else:
+        form = BancoForm()
+    
+    context = {"form": form, "title": "Crear Banco"}
+    return render(request, "liquidaciones/banco_form.html", context)
+
+
+def banco_detail(request, pk):
+    banco = get_object_or_404(Banco, pk=pk)
+    return render(request, "liquidaciones/banco_detail.html", {"banco": banco})
+
+
+def banco_edit(request, pk):
+    banco = get_object_or_404(Banco, pk=pk)
+    
+    if request.method == "POST":
+        form = BancoForm(request.POST, instance=banco)
+        
+        if form.is_valid():
+            try:
+                banco = form.save()
+                messages.success(request, "Banco actualizado exitosamente.")
+                return redirect("banco_detail", pk=banco.pk)
+            except Exception as e:
+                messages.error(request, f"Error al actualizar el banco: {e}")
+        else:
+            messages.error(request, "Error en el formulario. Por favor corrige los errores.")
+    else:
+        form = BancoForm(instance=banco)
+    
+    context = {
+        "form": form,
+        "title": f"Editar Banco {banco.nombre}",
+        "banco": banco,
+        "is_edit": True
+    }
+    return render(request, "liquidaciones/banco_form.html", context)
+
+
+def banco_delete(request, pk):
+    banco = get_object_or_404(Banco, pk=pk)
+    
+    if request.method == "POST":
+        nombre = banco.nombre
+        banco.delete()
+        messages.success(request, f"Banco {nombre} eliminado exitosamente.")
+        return redirect("banco_list")
+    
+    context = {"banco": banco, "title": "Eliminar Banco"}
+    return render(request, "liquidaciones/banco_confirm_delete.html", context)
+
+
+# Proveedor CRUD Views
+def proveedor_list(request):
+    proveedores = Proveedor.objects.select_related("procedencia").order_by("nombre")
+    
+    # Search functionality
+    search = request.GET.get("search", "")
+    if search:
+        proveedores = proveedores.filter(
+            models.Q(nombre__icontains=search) |
+            models.Q(procedencia__nombre__icontains=search)
+        )
+    
+    # Pagination
+    paginator = Paginator(proveedores, 10)  # Show 10 proveedores per page
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        "page_obj": page_obj,
+        "search": search,
+        "title": "Lista de Proveedores"
+    }
+    return render(request, "liquidaciones/proveedor_list.html", context)
+
+
+def proveedor_create(request):
+    if request.method == "POST":
+        form = ProveedorForm(request.POST)
+        
+        if form.is_valid():
+            try:
+                proveedor = form.save()
+                messages.success(request, f"Proveedor {proveedor.nombre} creado exitosamente.")
+                return redirect("proveedor_list")
+            except Exception as e:
+                messages.error(request, f"Error al crear el proveedor: {e}")
+        else:
+            messages.error(request, "Error en el formulario. Por favor corrige los errores.")
+    else:
+        form = ProveedorForm()
+    
+    context = {"form": form, "title": "Crear Proveedor"}
+    return render(request, "liquidaciones/proveedor_form.html", context)
+
+
+def proveedor_detail(request, pk):
+    proveedor = get_object_or_404(Proveedor.objects.select_related("procedencia"), pk=pk)
+    return render(request, "liquidaciones/proveedor_detail.html", {"proveedor": proveedor})
+
+
+def proveedor_edit(request, pk):
+    proveedor = get_object_or_404(Proveedor.objects.select_related("procedencia"), pk=pk)
+    
+    if request.method == "POST":
+        form = ProveedorForm(request.POST, instance=proveedor)
+        
+        if form.is_valid():
+            try:
+                proveedor = form.save()
+                messages.success(request, "Proveedor actualizado exitosamente.")
+                return redirect("proveedor_detail", pk=proveedor.pk)
+            except Exception as e:
+                messages.error(request, f"Error al actualizar el proveedor: {e}")
+        else:
+            messages.error(request, "Error en el formulario. Por favor corrige los errores.")
+    else:
+        form = ProveedorForm(instance=proveedor)
+    
+    context = {
+        "form": form,
+        "title": f"Editar Proveedor {proveedor.nombre}",
+        "proveedor": proveedor,
+        "is_edit": True
+    }
+    return render(request, "liquidaciones/proveedor_form.html", context)
+
+
+def proveedor_delete(request, pk):
+    proveedor = get_object_or_404(Proveedor, pk=pk)
+    
+    if request.method == "POST":
+        nombre = proveedor.nombre
+        proveedor.delete()
+        messages.success(request, f"Proveedor {nombre} eliminado exitosamente.")
+        return redirect("proveedor_list")
+    
+    context = {"proveedor": proveedor, "title": "Eliminar Proveedor"}
+    return render(request, "liquidaciones/proveedor_confirm_delete.html", context)
+
+
+# Procedencia CRUD Views
+def procedencia_list(request):
+    procedencias = Procedencia.objects.all().order_by("nombre")
+    
+    # Search functionality
+    search = request.GET.get("search", "")
+    if search:
+        procedencias = procedencias.filter(nombre__icontains=search)
+    
+    # Pagination
+    paginator = Paginator(procedencias, 10)  # Show 10 procedencias per page
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        "page_obj": page_obj,
+        "search": search,
+        "title": "Lista de Procedencias"
+    }
+    return render(request, "liquidaciones/procedencia_list.html", context)
+
+
+def procedencia_create(request):
+    if request.method == "POST":
+        form = ProcedenciaForm(request.POST)
+        
+        if form.is_valid():
+            try:
+                procedencia = form.save()
+                messages.success(request, f"Procedencia {procedencia.nombre} creada exitosamente.")
+                return redirect("procedencia_list")
+            except Exception as e:
+                messages.error(request, f"Error al crear la procedencia: {e}")
+        else:
+            messages.error(request, "Error en el formulario. Por favor corrige los errores.")
+    else:
+        form = ProcedenciaForm()
+    
+    context = {"form": form, "title": "Crear Procedencia"}
+    return render(request, "liquidaciones/procedencia_form.html", context)
+
+
+def procedencia_detail(request, pk):
+    procedencia = get_object_or_404(Procedencia, pk=pk)
+    return render(request, "liquidaciones/procedencia_detail.html", {"procedencia": procedencia})
+
+
+def procedencia_edit(request, pk):
+    procedencia = get_object_or_404(Procedencia, pk=pk)
+    
+    if request.method == "POST":
+        form = ProcedenciaForm(request.POST, instance=procedencia)
+        
+        if form.is_valid():
+            try:
+                procedencia = form.save()
+                messages.success(request, "Procedencia actualizada exitosamente.")
+                return redirect("procedencia_detail", pk=procedencia.pk)
+            except Exception as e:
+                messages.error(request, f"Error al actualizar la procedencia: {e}")
+        else:
+            messages.error(request, "Error en el formulario. Por favor corrige los errores.")
+    else:
+        form = ProcedenciaForm(instance=procedencia)
+    
+    context = {
+        "form": form,
+        "title": f"Editar Procedencia {procedencia.nombre}",
+        "procedencia": procedencia,
+        "is_edit": True
+    }
+    return render(request, "liquidaciones/procedencia_form.html", context)
+
+
+def procedencia_delete(request, pk):
+    procedencia = get_object_or_404(Procedencia, pk=pk)
+    
+    if request.method == "POST":
+        nombre = procedencia.nombre
+        procedencia.delete()
+        messages.success(request, f"Procedencia {nombre} eliminada exitosamente.")
+        return redirect("procedencia_list")
+    
+    context = {"procedencia": procedencia, "title": "Eliminar Procedencia"}
+    return render(request, "liquidaciones/procedencia_confirm_delete.html", context)
+
