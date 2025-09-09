@@ -9,8 +9,8 @@ from .models import Cliente
 
 def estado_cuenta(request, cliente_id):
     cliente = get_object_or_404(Cliente, id=cliente_id)
-    liquidaciones = Liquidacion.objects.filter(cliente=cliente).order_by("fecha")
-    pagos = Pago.objects.filter(cliente=cliente).order_by("fecha")
+    liquidaciones = Liquidacion.objects.filter(cliente=cliente).select_related('proveedor__procedencia').prefetch_related('liquidacionitem_set').order_by("fecha")
+    pagos = Pago.objects.filter(liquidacion__cliente=cliente).select_related('liquidacion', 'banco').order_by("fecha")
 
     # Create a comprehensive list combining liquidaciones and pagos
     account_entries = []
@@ -28,7 +28,7 @@ def estado_cuenta(request, cliente_id):
                 "bco": "",
                 "referencia": liquidacion.fecha.strftime("%y%m%d"),
                 "pagos": Decimal("0"),
-                "liquidacion": liquidacion.equivalente_gs,
+                "liquidacion": liquidacion.valor_total_calculado,
                 "liquidacion_obj": liquidacion,
             }
         )
@@ -41,7 +41,7 @@ def estado_cuenta(request, cliente_id):
                 "tipo": "pago",
                 "factura": "",
                 "origen": "",
-                "prof": "",
+                "prof": pago.liquidacion.numero_despacho,  # Get numero_despacho from related liquidacion
                 "oc": "",
                 "bco": pago.banco.nombre[:3].upper(),
                 "referencia": pago.referencia or pago.fecha.strftime("%y%m%d"),

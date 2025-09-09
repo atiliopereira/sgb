@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory
-from .models import Liquidacion, LiquidacionItem, Proveedor
+from .models import Liquidacion, LiquidacionItem, Proveedor, Pago, Banco
 from items.models import Item
 
 
@@ -102,3 +102,26 @@ LiquidacionItemFormSet = inlineformset_factory(
     extra=0,  # No extra forms by default
     can_delete=True
 )
+
+
+class PagoForm(forms.ModelForm):
+    class Meta:
+        model = Pago
+        fields = ['liquidacion', 'banco', 'fecha', 'monto', 'referencia', 'concepto']
+        widgets = {
+            'liquidacion': forms.HiddenInput(),
+            'banco': forms.Select(attrs={'class': 'form-control'}),
+            'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'monto': forms.TextInput(attrs={
+                'class': 'form-control formatted-number', 
+                'style': 'text-align:right'
+            }),
+            'referencia': forms.TextInput(attrs={'class': 'form-control'}),
+            'concepto': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['banco'].queryset = Banco.objects.all()
+        self.fields['referencia'].required = False
+        self.fields['concepto'].required = False

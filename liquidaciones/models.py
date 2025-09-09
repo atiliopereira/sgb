@@ -90,7 +90,7 @@ class LiquidacionItem(models.Model):
 
     @property
     def subtotal(self):
-        return self.monto + self.iva + self.retencion
+        return self.monto + self.iva - self.retencion
 
     def __str__(self):
         return f"{self.item.descripcion} - {self.subtotal}"
@@ -106,15 +106,25 @@ class Banco(models.Model):
 
 
 class Pago(models.Model):
-    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name="pagos")
-    banco = models.ForeignKey(Banco, on_delete=models.CASCADE)
+    liquidacion = models.ForeignKey(Liquidacion, on_delete=models.PROTECT)
+    banco = models.ForeignKey(Banco, on_delete=models.PROTECT)
     fecha = models.DateField()
     monto = models.DecimalField(max_digits=12, decimal_places=2)
     referencia = models.CharField(max_length=100, blank=True)
     concepto = models.TextField(blank=True)
 
     class Meta:
-        ordering = ["fecha"]
+        ordering = ["-fecha"]
+
+    @property
+    def numero_despacho(self):
+        """Accede al número de despacho a través de la liquidación"""
+        return self.liquidacion.numero_despacho
+    
+    @property
+    def cliente(self):
+        """Accede al cliente a través de la liquidación"""
+        return self.liquidacion.cliente
 
     def __str__(self):
-        return f"Pago {self.cliente.nombre} - {self.monto} ({self.fecha})"
+        return f"Pago {self.numero_despacho} - {self.monto} ({self.fecha})"
