@@ -8,7 +8,7 @@ from clientes.models import Cliente
 from items.models import Item
 
 from .forms import LiquidacionForm, LiquidacionItemFormSet, PagoForm, BancoForm, ProcedenciaForm, ProveedorForm, PlanillaGastosForm, PlanillaGastosItemFormSet
-from .models import Banco, Liquidacion, LiquidacionItem, Pago, Proveedor, Procedencia, PlanillaGastos
+from .models import Banco, Liquidacion, LiquidacionItem, Pago, Proveedor, Procedencia, PlanillaGastos, PlanillaGastosItem
 
 
 def liquidacion_create(request):
