@@ -75,11 +75,8 @@ class Liquidacion(models.Model):
     def valor_total_calculado(self):
         """
         Calcula el valor total como la suma de subtotales de todos los items de la liquidación
-        más el total de gastos de la planilla (si existe)
         """
-        total_items = sum(item.subtotal for item in self.liquidacionitem_set.all())
-        total_gastos = self.planilla_gastos.total_gastos if self.planilla_gastos else 0
-        return total_items + total_gastos
+        return sum(item.subtotal for item in self.liquidacionitem_set.all())
 
     def __str__(self):
         return f"Liquidación {self.numero_liquidacion} - {self.cliente.nombre}"
