@@ -8,6 +8,7 @@ dependencies = [
     "django>=4.2,<5.0",
     "psycopg2-binary>=2.9.0",
     "python-dotenv>=1.0.0",
+    "reportlab>=4.0.0",
 ]
 
 [tool.hatch.build.targets.wheel]

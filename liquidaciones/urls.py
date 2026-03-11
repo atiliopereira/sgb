@@ -9,6 +9,7 @@ urlpatterns = [
     path("<int:pk>/", views.liquidacion_detail, name="liquidacion_detail"),
     path("<int:pk>/editar/", views.liquidacion_edit, name="liquidacion_edit"),
     path("<int:pk>/eliminar/", views.liquidacion_delete, name="liquidacion_delete"),
+    path("<int:pk>/pdf/", views.liquidacion_pdf, name="liquidacion_pdf"),
     # Pago URLs
     path("pagos/", views.pago_list, name="pago_list"),
     path("pagos/crear/", views.pago_create, name="pago_create"),

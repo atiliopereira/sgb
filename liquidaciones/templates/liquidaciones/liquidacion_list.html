@@ -127,16 +127,20 @@
                                 </td>
                                 <td>
                                     <div class="btn-group btn-actions" role="group">
-                                        <a href="{% url 'liquidacion_detail' liquidacion.pk %}" 
+                                        <a href="{% url 'liquidacion_detail' liquidacion.pk %}"
                                            class="btn btn-sm btn-outline-primary" title="Ver detalles">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <a href="{% url 'liquidacion_edit' liquidacion.pk %}" 
+                                        <a href="{% url 'liquidacion_pdf' liquidacion.pk %}"
+                                           class="btn btn-sm btn-outline-info" title="Descargar PDF" target="_blank">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
+                                        <a href="{% url 'liquidacion_edit' liquidacion.pk %}"
                                            class="btn btn-sm btn-outline-secondary" title="Editar">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <a href="{% url 'liquidacion_delete' liquidacion.pk %}" 
-                                           class="btn btn-sm btn-outline-danger" 
+                                        <a href="{% url 'liquidacion_delete' liquidacion.pk %}"
+                                           class="btn btn-sm btn-outline-danger"
                                            title="Eliminar">
                                             <i class="fas fa-trash"></i>
                                         </a>

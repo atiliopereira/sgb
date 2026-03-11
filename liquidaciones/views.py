@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import models
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from clientes.models import Cliente
@@ -9,6 +9,7 @@ from items.models import Item
 
 from .forms import LiquidacionForm, LiquidacionItemFormSet, PagoForm, BancoForm, ProcedenciaForm, ProveedorForm, PlanillaGastosForm, PlanillaGastosItemFormSet
 from .models import Banco, Liquidacion, LiquidacionItem, Pago, Proveedor, Procedencia, PlanillaGastos, PlanillaGastosItem
+from .pdf_utils import generar_pdf_liquidacion
 
 
 def liquidacion_create(request):
@@ -1202,7 +1203,7 @@ def planilla_gastos_delete(request, pk):
 def planilla_gastos_autocomplete(request):
     query = request.GET.get("q", "")
     planilla_id = request.GET.get("id", "")
-    
+
     if planilla_id:
         # Fetch specific planilla by ID for restoration after form errors
         try:
@@ -1228,6 +1229,21 @@ def planilla_gastos_autocomplete(request):
         ]
     else:
         results = []
-    
+
     return JsonResponse({"results": results})
+
+
+def liquidacion_pdf(request, pk):
+    """Genera un PDF de la liquidación"""
+    liquidacion = get_object_or_404(Liquidacion, pk=pk)
+
+    # Generar el PDF
+    buffer = generar_pdf_liquidacion(liquidacion)
+
+    # Crear la respuesta HTTP con el PDF
+    response = HttpResponse(buffer, content_type='application/pdf')
+    filename = f'Liquidacion_{liquidacion.numero_liquidacion or pk}.pdf'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    return response
 
