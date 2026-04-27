@@ -89,6 +89,14 @@
                                 {{ liquidacion.cliente.nombre }}
                             </div>
                             <div class="col-sm-6">
+                                <strong>Proforma Nº:</strong><br>
+                                {{ liquidacion.proforma|default:"-" }}
+                            </div>
+                            <div class="col-sm-6">
+                                <strong>Orden de Compra Nº:</strong><br>
+                                {{ liquidacion.orden_de_compra|default:"-" }}
+                            </div>
+                            <div class="col-sm-6">
                                 <strong>Número de Despacho:</strong><br>
                                 {{ liquidacion.numero_despacho }}
                             </div>
@@ -112,6 +120,18 @@
                     <div class="info-section">
                         <h5><i class="fas fa-dollar-sign me-2"></i>Información Financiera</h5>
                         <div class="row g-3">
+                            <div class="col-sm-6">
+                                <strong>Factura:</strong><br>
+                                {{ liquidacion.factura|format_integer }}
+                            </div>
+                            <div class="col-sm-6">
+                                <strong>Flete:</strong><br>
+                                {{ liquidacion.flete|format_integer }}
+                            </div>
+                            <div class="col-sm-6">
+                                <strong>Seguro:</strong><br>
+                                {{ liquidacion.seguro|format_integer }}
+                            </div>
                             <div class="col-sm-6">
                                 <strong>Valor Imponible:</strong><br>
                                 <i class="fas fa-money-bill me-1 text-success"></i>

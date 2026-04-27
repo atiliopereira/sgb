@@ -1,15 +1,25 @@
 import os
-from io import BytesIO
 from decimal import Decimal
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
-from reportlab.pdfgen import canvas
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from io import BytesIO
 
-LOGO_PATH = os.path.join(os.path.dirname(__file__), 'static', 'liquidaciones', 'images', 'logo_sgb.png')
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import inch
+from reportlab.pdfgen import canvas
+from reportlab.platypus import (
+    Image,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
+
+LOGO_PATH = os.path.join(
+    os.path.dirname(__file__), "static", "liquidaciones", "images", "logo_sgb.png"
+)
 
 
 def numero_a_letras(numero):
@@ -17,20 +27,67 @@ def numero_a_letras(numero):
     # Conversión básica para guaraníes
     # Esta es una implementación simplificada
 
-    unidades = ['', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve']
-    decenas = ['', 'diez', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa']
-    centenas = ['', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos']
+    unidades = [
+        "",
+        "uno",
+        "dos",
+        "tres",
+        "cuatro",
+        "cinco",
+        "seis",
+        "siete",
+        "ocho",
+        "nueve",
+    ]
+    decenas = [
+        "",
+        "diez",
+        "veinte",
+        "treinta",
+        "cuarenta",
+        "cincuenta",
+        "sesenta",
+        "setenta",
+        "ochenta",
+        "noventa",
+    ]
+    centenas = [
+        "",
+        "ciento",
+        "doscientos",
+        "trescientos",
+        "cuatrocientos",
+        "quinientos",
+        "seiscientos",
+        "setecientos",
+        "ochocientos",
+        "novecientos",
+    ]
 
     especiales = {
-        11: 'once', 12: 'doce', 13: 'trece', 14: 'catorce', 15: 'quince',
-        16: 'dieciséis', 17: 'diecisiete', 18: 'dieciocho', 19: 'diecinueve',
-        21: 'veintiuno', 22: 'veintidós', 23: 'veintitrés', 24: 'veinticuatro',
-        25: 'veinticinco', 26: 'veintiséis', 27: 'veintisiete', 28: 'veintiocho', 29: 'veintinueve'
+        11: "once",
+        12: "doce",
+        13: "trece",
+        14: "catorce",
+        15: "quince",
+        16: "dieciséis",
+        17: "diecisiete",
+        18: "dieciocho",
+        19: "diecinueve",
+        21: "veintiuno",
+        22: "veintidós",
+        23: "veintitrés",
+        24: "veinticuatro",
+        25: "veinticinco",
+        26: "veintiséis",
+        27: "veintisiete",
+        28: "veintiocho",
+        29: "veintinueve",
     }
 
     def convertir_grupo(n):
         if n == 0:
-            return ''
+            return ""
         elif n in especiales:
             return especiales[n]
         elif n < 10:
@@ -38,25 +95,25 @@ def numero_a_letras(numero):
         elif n < 20:
             return decenas[1]
         elif n < 30:
-            return especiales.get(n, 'veinti' + unidades[n % 10])
+            return especiales.get(n, "veinti" + unidades[n % 10])
         elif n < 100:
             u = n % 10
             d = n // 10
             if u == 0:
                 return decenas[d]
-            return decenas[d] + ' y ' + unidades[u]
+            return decenas[d] + " y " + unidades[u]
         elif n < 1000:
             c = n // 100
             resto = n % 100
             if n == 100:
-                return 'cien'
+                return "cien"
             if resto == 0:
                 return centenas[c]
-            return centenas[c] + ' ' + convertir_grupo(resto)
-        return ''
+            return centenas[c] + " " + convertir_grupo(resto)
+        return ""
 
     if numero == 0:
-        return 'cero'
+        return "cero"
 
     # Convertir a entero si es Decimal
     if isinstance(numero, Decimal):
@@ -73,20 +130,20 @@ def numero_a_letras(numero):
 
     if millones > 0:
         if millones == 1:
-            resultado.append('un millón')
+            resultado.append("un millón")
         else:
-            resultado.append(convertir_grupo(millones) + ' millones')
+            resultado.append(convertir_grupo(millones) + " millones")
 
     if miles > 0:
         if miles == 1:
-            resultado.append('mil')
+            resultado.append("mil")
         else:
-            resultado.append(convertir_grupo(miles) + ' mil')
+            resultado.append(convertir_grupo(miles) + " mil")
 
     if unidades_simples > 0:
         resultado.append(convertir_grupo(unidades_simples))
 
-    return ', '.join(resultado) if resultado else 'cero'
+    return ", ".join(resultado) if resultado else "cero"
 
 
 def generar_pdf_liquidacion(liquidacion, buffer=None):
@@ -102,7 +159,7 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
         rightMargin=40,
         leftMargin=40,
         topMargin=40,
-        bottomMargin=40
+        bottomMargin=40,
     )
 
     # Estilos
@@ -110,51 +167,51 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
 
     # Estilo para el encabezado
     style_header = ParagraphStyle(
-        'CustomHeader',
-        parent=styles['Heading1'],
+        "CustomHeader",
+        parent=styles["Heading1"],
         fontSize=14,
         textColor=colors.black,
         spaceAfter=0,
         alignment=TA_CENTER,
-        fontName='Helvetica-Bold'
+        fontName="Helvetica-Bold",
     )
 
     style_subheader = ParagraphStyle(
-        'CustomSubHeader',
-        parent=styles['Normal'],
+        "CustomSubHeader",
+        parent=styles["Normal"],
         fontSize=10,
         textColor=colors.black,
         spaceAfter=0,
         alignment=TA_CENTER,
-        fontName='Helvetica-Bold'
+        fontName="Helvetica-Bold",
     )
 
     style_address = ParagraphStyle(
-        'CustomAddress',
-        parent=styles['Normal'],
+        "CustomAddress",
+        parent=styles["Normal"],
         fontSize=7,
         textColor=colors.black,
         spaceAfter=2,
         alignment=TA_CENTER,
-        fontName='Helvetica'
+        fontName="Helvetica",
     )
 
     style_normal = ParagraphStyle(
-        'CustomNormal',
-        parent=styles['Normal'],
+        "CustomNormal",
+        parent=styles["Normal"],
         fontSize=9,
         textColor=colors.black,
         alignment=TA_LEFT,
-        fontName='Helvetica'
+        fontName="Helvetica",
     )
 
     style_bold = ParagraphStyle(
-        'CustomBold',
-        parent=styles['Normal'],
+        "CustomBold",
+        parent=styles["Normal"],
         fontSize=9,
         textColor=colors.black,
         alignment=TA_LEFT,
-        fontName='Helvetica-Bold'
+        fontName="Helvetica-Bold",
     )
 
     # Contenido del PDF
@@ -162,88 +219,152 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
 
     # Encabezado de la empresa - usar imagen si existe, sino texto
     if os.path.exists(LOGO_PATH):
-        logo = Image(LOGO_PATH, width=6.5*inch, height=1.0*inch)
+        logo = Image(LOGO_PATH, width=6.5 * inch, height=1.0 * inch)
         story.append(logo)
     else:
         story.append(Paragraph("AGENCIA ADUANERA SGB", style_header))
         story.append(Paragraph("GAVILAN BALOVIER & ASOCIADOS", style_subheader))
         story.append(Paragraph("DESPACHANTES DE ADUANAS", style_subheader))
         story.append(Spacer(1, 0.1 * inch))
-        story.append(Paragraph(
-            "<b>ASUNCIÓN:</b> Montevideo 173 - Edif. Boquerón - 3er Piso Ofic. 302 - Telefax: 496 890 / 445 257",
-            style_address
-        ))
-        story.append(Paragraph(
-            "<b>CIUDAD DEL ESTE:</b> Curupayty y Adrian Jara - Edif. Oriental - 2do Piso Ofic. 203 - Telefax: 061 511 229 / 501 553",
-            style_address
-        ))
+        story.append(
+            Paragraph(
+                "<b>ASUNCIÓN:</b> Montevideo 173 - Edif. Boquerón - 3er Piso Ofic. 302 - Telefax: 496 890 / 445 257",
+                style_address,
+            )
+        )
+        story.append(
+            Paragraph(
+                "<b>CIUDAD DEL ESTE:</b> Curupayty y Adrian Jara - Edif. Oriental - 2do Piso Ofic. 203 - Telefax: 061 511 229 / 501 553",
+                style_address,
+            )
+        )
     story.append(Spacer(1, 0.2 * inch))
 
     # Línea separadora
     story.append(Spacer(1, 0.1 * inch))
 
     # Fecha
-    fecha_texto = f"Asunción, {liquidacion.fecha.strftime('%d de %B de %Y')}"
+    meses_es = {
+        1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
+        5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
+        9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre",
+    }
+    mes = meses_es[liquidacion.fecha.month]
+    fecha_texto = f"Asunción, {liquidacion.fecha.strftime('%d')} de {mes} de {liquidacion.fecha.strftime('%Y')}"
     story.append(Paragraph(fecha_texto, style_normal))
     story.append(Spacer(1, 0.2 * inch))
 
     # Información del cliente y liquidación en dos columnas
     info_data = [
-        [Paragraph('', style_normal), Paragraph('Liquidación Nº:', style_bold), Paragraph(liquidacion.numero_liquidacion or 'S/N', style_normal)],
-        [Paragraph('Sr. (es)', style_normal), Paragraph('Proforma Nº:', style_bold), Paragraph('S/N', style_normal)],
-        [Paragraph(f'<b>{liquidacion.cliente.nombre}</b>', style_normal), Paragraph('Orden de Compra Nº:', style_bold), Paragraph('S/N', style_normal)],
-        [Paragraph('Presente:', style_normal), Paragraph('Despacho Nº:', style_bold), Paragraph(liquidacion.numero_despacho or 'S/N', style_normal)],
-        [Paragraph('', style_normal), Paragraph('Clase:', style_bold), Paragraph(liquidacion.get_clase_display(), style_normal)],
-        [Paragraph('', style_normal), Paragraph('Factura Comercial Nº:', style_bold), Paragraph(liquidacion.numero_factura_comercial or 'S/N', style_normal)],
+        [
+            Paragraph("", style_normal),
+            Paragraph("Liquidación Nº:", style_bold),
+            Paragraph(liquidacion.numero_liquidacion or "S/N", style_normal),
+        ],
+        [
+            Paragraph("Sr. (es)", style_normal),
+            Paragraph("Proforma Nº:", style_bold),
+            Paragraph(liquidacion.proforma or "S/N", style_normal),
+        ],
+        [
+            Paragraph(f"<b>{liquidacion.cliente.nombre}</b>", style_normal),
+            Paragraph("Orden de Compra Nº:", style_bold),
+            Paragraph(liquidacion.orden_de_compra or "S/N", style_normal),
+        ],
+        [
+            Paragraph("Presente:", style_normal),
+            Paragraph("Despacho Nº:", style_bold),
+            Paragraph(liquidacion.numero_despacho or "S/N", style_normal),
+        ],
+        [
+            Paragraph("", style_normal),
+            Paragraph("Clase:", style_bold),
+            Paragraph(liquidacion.get_clase_display(), style_normal),
+        ],
+        [
+            Paragraph("", style_normal),
+            Paragraph("Factura Comercial Nº:", style_bold),
+            Paragraph(liquidacion.numero_factura_comercial or "S/N", style_normal),
+        ],
     ]
 
-    info_table = Table(info_data, colWidths=[2.5*inch, 1.5*inch, 2*inch])
-    info_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-        ('ALIGN', (1, 0), (2, -1), 'LEFT'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-    ]))
+    info_table = Table(info_data, colWidths=[2.5 * inch, 1.5 * inch, 2 * inch])
+    info_table.setStyle(
+        TableStyle(
+            [
+                ("ALIGN", (0, 0), (0, -1), "LEFT"),
+                ("ALIGN", (1, 0), (2, -1), "LEFT"),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ]
+        )
+    )
 
     story.append(info_table)
     story.append(Spacer(1, 0.3 * inch))
 
     # Tabla de items
-    items_data = [['', 'Sub-Total', 'I.V.A.', 'Total']]
-
-    # Agregar los items de la liquidación
     items_liquidacion = liquidacion.liquidacionitem_set.all()
+    has_retenciones = any(item.retencion for item in items_liquidacion)
+
+    if has_retenciones:
+        items_data = [["", "Sub-Total", "I.V.A.", "Retención", "Total"]]
+    else:
+        items_data = [["", "Sub-Total", "I.V.A.", "Total"]]
+
     for item_liq in items_liquidacion:
-        descripcion = item_liq.item.descripcion if item_liq.item else ''
-        subtotal = f'Gs. {item_liq.monto:,.0f}'.replace(',', '.')
-        iva = f'{item_liq.iva:,.0f}'.replace(',', '.') if item_liq.iva else ''
-        total = f'{item_liq.subtotal:,.0f}'.replace(',', '.')
-        items_data.append([descripcion, subtotal, iva, total])
+        descripcion = item_liq.item or ""
+        subtotal = f"Gs. {item_liq.monto:,.0f}".replace(",", ".")
+        iva = f"{item_liq.iva:,.0f}".replace(",", ".") if item_liq.iva else ""
+        total = f"{item_liq.subtotal:,.0f}".replace(",", ".")
+        if has_retenciones:
+            retencion = f"{item_liq.retencion:,.0f}".replace(",", ".") if item_liq.retencion else ""
+            items_data.append([descripcion, subtotal, iva, retencion, total])
+        else:
+            items_data.append([descripcion, subtotal, iva, total])
 
     # Total
     total_subtotal = sum(item.monto or 0 for item in items_liquidacion)
     total_iva = sum(item.iva or 0 for item in items_liquidacion)
+    total_retencion = sum(item.retencion or 0 for item in items_liquidacion)
     total_general = sum(item.subtotal or 0 for item in items_liquidacion)
 
-    items_data.append([
-        'TOTAL',
-        f'Gs. {total_subtotal:,.0f}'.replace(',', '.'),
-        f'{total_iva:,.0f}'.replace(',', '.'),
-        f'{total_general:,.0f}'.replace(',', '.')
-    ])
+    if has_retenciones:
+        items_data.append([
+            "TOTAL",
+            f"Gs. {total_subtotal:,.0f}".replace(",", "."),
+            f"{total_iva:,.0f}".replace(",", "."),
+            f"{total_retencion:,.0f}".replace(",", "."),
+            f"{total_general:,.0f}".replace(",", "."),
+        ])
+        # 7.4" usable: description gets the rest, numeric cols 1.3" each
+        col_widths = [2.6 * inch, 1.2 * inch, 1.2 * inch, 1.2 * inch, 1.2 * inch]
+    else:
+        items_data.append([
+            "TOTAL",
+            f"Gs. {total_subtotal:,.0f}".replace(",", "."),
+            f"{total_iva:,.0f}".replace(",", "."),
+            f"{total_general:,.0f}".replace(",", "."),
+        ])
+        # 7.4" usable: description gets the rest, numeric cols 1.6" each
+        col_widths = [2.6 * inch, 1.6 * inch, 1.6 * inch, 1.6 * inch]
 
-    items_table = Table(items_data, colWidths=[3.5*inch, 1*inch, 1*inch, 1*inch])
-    items_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-        ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTNAME', (0, 1), (-1, -2), 'Helvetica'),
-        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 9),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('BACKGROUND', (0, -1), (-1, -1), colors.lightgrey),
-    ]))
+    items_table = Table(items_data, colWidths=col_widths)
+    items_table.setStyle(
+        TableStyle(
+            [
+                ("ALIGN", (0, 0), (0, -1), "LEFT"),
+                ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTNAME", (0, 1), (-1, -2), "Helvetica"),
+                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                ("BACKGROUND", (0, -1), (-1, -1), colors.lightgrey),
+            ]
+        )
+    )
 
     story.append(items_table)
     story.append(Spacer(1, 0.1 * inch))
@@ -254,54 +375,87 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
     story.append(Spacer(1, 0.2 * inch))
 
     # Marca y detalle del contenido
-    story.append(Paragraph("<b>MARCA - Nº DE BULTOS - DETALLE DEL CONTENIDO</b>", style_bold))
+    story.append(
+        Paragraph("<b>MARCA - Nº DE BULTOS - DETALLE DEL CONTENIDO</b>", style_bold)
+    )
     story.append(Paragraph("01) Mercadería según factura comercial.-", style_normal))
     story.append(Spacer(1, 0.2 * inch))
 
     # Información adicional en dos columnas
     detalle_data = [
-        ['Partida Arancelaria:', liquidacion.partida_arancelaria or '', 'Factura:', ''],
-        ['Ad. Val.:', liquidacion.ad_valorem or '', 'Flete:', ''],
-        ['Valor Imponible en ' + liquidacion.moneda_valor_imponible + ':',
-         f'{liquidacion.valor_imponible:,.2f}'.replace(',', '.') if liquidacion.valor_imponible else '',
-         'Seguro:', ''],
-        ['Equivalente a GS.:',
-         f'{liquidacion.equivalente_gs:,.0f}'.replace(',', '.') if liquidacion.equivalente_gs else '',
-         'V.I.:',
-         f'{liquidacion.valor_imponible:,.2f}'.replace(',', '.') if liquidacion.valor_imponible else ''],
-        ['T.C. ' + liquidacion.moneda_valor_imponible + ':', liquidacion.tipo_cambio or '', '', ''],
-        ['Origen / Procedencia:', liquidacion.procedencia or '', '', ''],
-        ['Proveedor:', liquidacion.proveedor.nombre if liquidacion.proveedor else '', '', ''],
+        ["Partida Arancelaria:", liquidacion.partida_arancelaria or "", "Factura:", f"{liquidacion.factura:,.2f}".replace(",", ".") if liquidacion.factura else ""],
+        ["Ad. Val.:", liquidacion.ad_valorem or "", "Flete:", f"{liquidacion.flete:,.2f}".replace(",", ".") if liquidacion.flete else ""],
+        [
+            "Valor Imponible en " + liquidacion.moneda_valor_imponible + ":",
+            f"{liquidacion.valor_imponible:,.2f}".replace(",", ".")
+            if liquidacion.valor_imponible
+            else "",
+            "Seguro:",
+            f"{liquidacion.seguro:,.2f}".replace(",", ".") if liquidacion.seguro else "",
+        ],
+        [
+            "Equivalente a GS.:",
+            f"{liquidacion.equivalente_gs:,.0f}".replace(",", ".")
+            if liquidacion.equivalente_gs
+            else "",
+            "V.I.:",
+            f"{liquidacion.valor_imponible:,.2f}".replace(",", ".")
+            if liquidacion.valor_imponible
+            else "",
+        ],
+        [
+            "T.C. " + liquidacion.moneda_valor_imponible + ":",
+            liquidacion.tipo_cambio or "",
+            "",
+            "",
+        ],
+        ["Origen / Procedencia:", liquidacion.procedencia or "", "", ""],
+        [
+            "Proveedor:",
+            liquidacion.proveedor.nombre if liquidacion.proveedor else "",
+            "",
+            "",
+        ],
     ]
 
-    detalle_table = Table(detalle_data, colWidths=[1.8*inch, 1.5*inch, 1*inch, 1.2*inch])
-    detalle_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-        ('ALIGN', (1, 0), (1, -1), 'LEFT'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-        ('FONTNAME', (1, 0), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 0), (-1, -1), 9),
-    ]))
+    detalle_table = Table(
+        detalle_data, colWidths=[1.8 * inch, 1.5 * inch, 1 * inch, 1.2 * inch]
+    )
+    detalle_table.setStyle(
+        TableStyle(
+            [
+                ("ALIGN", (0, 0), (0, -1), "LEFT"),
+                ("ALIGN", (1, 0), (1, -1), "LEFT"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("FONTNAME", (1, 0), (-1, -1), "Helvetica"),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ]
+        )
+    )
 
     story.append(detalle_table)
     story.append(Spacer(1, 0.4 * inch))
 
     # Firmas
     firmas_data = [
-        ['Elaborado por:', 'Verificado y Autorizado por:'],
-        ['', ''],
-        ['Ivan G. Gavilán', 'Carmen Jiménez.'],
-        ['Auxiliar Despachante.', 'Jefa de Operaciones.']
+        ["Elaborado por:", "Verificado y Autorizado por:"],
+        ["", ""],
+        ["Ivan G. Gavilán", "Carmen Jiménez."],
+        ["Despachante.", "Jefa de Operaciones."],
     ]
 
-    firmas_table = Table(firmas_data, colWidths=[3*inch, 3*inch])
-    firmas_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 0), (-1, -1), 9),
-    ]))
+    firmas_table = Table(firmas_data, colWidths=[3 * inch, 3 * inch])
+    firmas_table.setStyle(
+        TableStyle(
+            [
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ]
+        )
+    )
 
     story.append(firmas_table)
 

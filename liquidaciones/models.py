@@ -1,7 +1,6 @@
 from django.db import models
 
 from clientes.models import Cliente
-from items.models import Item
 
 
 class Procedencia(models.Model):
@@ -37,11 +36,16 @@ class Liquidacion(models.Model):
     fecha = models.DateField()
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     numero_liquidacion = models.CharField(max_length=50)
+    proforma = models.CharField(max_length=50, blank=True, null=True)
+    orden_de_compra = models.CharField(max_length=50, blank=True, null=True)
     numero_despacho = models.CharField(max_length=50)
     clase = models.CharField(max_length=20, choices=ClaseChoices.choices)
     numero_factura_comercial = models.CharField(max_length=50)
     partida_arancelaria = models.CharField(max_length=50)
     ad_valorem = models.CharField(max_length=50)
+    factura = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    flete = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    seguro = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     valor_imponible = models.DecimalField(max_digits=12, decimal_places=2)
     moneda_valor_imponible = models.CharField(
         max_length=10, choices=MonedaChoices.choices
@@ -49,7 +53,9 @@ class Liquidacion(models.Model):
     equivalente_gs = models.DecimalField(max_digits=12, decimal_places=2)
     tipo_cambio = models.CharField(max_length=20)
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE)
-    planilla_gastos = models.ForeignKey('PlanillaGastos', on_delete=models.SET_NULL, null=True, blank=True)
+    planilla_gastos = models.ForeignKey(
+        "PlanillaGastos", on_delete=models.SET_NULL, null=True, blank=True
+    )
 
     @property
     def procedencia(self):
@@ -84,7 +90,7 @@ class Liquidacion(models.Model):
 
 class LiquidacionItem(models.Model):
     liquidacion = models.ForeignKey(Liquidacion, on_delete=models.CASCADE)
-    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    item = models.CharField(max_length=255)
     monto = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     iva = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     retencion = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -94,7 +100,7 @@ class LiquidacionItem(models.Model):
         return self.monto + self.iva - self.retencion
 
     def __str__(self):
-        return f"{self.item.descripcion} - {self.subtotal}"
+        return f"{self.item} - {self.subtotal}"
 
 
 class Banco(models.Model):
@@ -121,7 +127,7 @@ class Pago(models.Model):
     def numero_despacho(self):
         """Accede al número de despacho a través de la liquidación"""
         return self.liquidacion.numero_despacho
-    
+
     @property
     def cliente(self):
         """Accede al cliente a través de la liquidación"""

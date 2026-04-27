@@ -6,7 +6,6 @@ import json
 
 from clientes.models import Cliente
 from liquidaciones.models import Procedencia, Proveedor, Liquidacion
-from items.models import Item
 
 
 class AutocompleteTestCase(TestCase):
@@ -56,10 +55,6 @@ class AutocompleteTestCase(TestCase):
             procedencia=self.procedencia_py
         )
         
-        # Create test items
-        self.item1 = Item.objects.create(descripcion='Producto A')
-        self.item2 = Item.objects.create(descripcion='Producto B Special')
-        self.item3 = Item.objects.create(descripcion='Item C')
 
 
 class ClienteAutocompleteTests(AutocompleteTestCase):
@@ -273,61 +268,6 @@ class ProveedorAutocompleteTests(AutocompleteTestCase):
         self.assertEqual(response.status_code, 200)
 
 
-class ItemAutocompleteTests(AutocompleteTestCase):
-    """Tests for item autocomplete API"""
-    
-    def test_item_autocomplete_url_exists(self):
-        """Test that the item autocomplete URL exists"""
-        url = reverse('item_autocomplete')
-        response = self.client.get(url + '?q=producto')
-        self.assertEqual(response.status_code, 200)
-    
-    def test_item_autocomplete_returns_json(self):
-        """Test that item autocomplete returns valid JSON"""
-        url = reverse('item_autocomplete')
-        response = self.client.get(url + '?q=producto')
-        
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Content-Type'], 'application/json')
-        
-        data = json.loads(response.content)
-        self.assertIsInstance(data, dict)
-        self.assertIn('results', data)
-        self.assertIsInstance(data['results'], list)
-    
-    def test_item_autocomplete_search(self):
-        """Test item autocomplete search functionality"""
-        url = reverse('item_autocomplete')
-        
-        response = self.client.get(url + '?q=producto')
-        data = json.loads(response.content)
-        
-        # Should find 2 products with 'producto' in name
-        self.assertEqual(len(data['results']), 2)
-        result_texts = [result['text'] for result in data['results']]
-        self.assertIn('Producto A', result_texts)
-        self.assertIn('Producto B Special', result_texts)
-    
-    def test_item_autocomplete_case_insensitive(self):
-        """Test that item autocomplete is case insensitive"""
-        url = reverse('item_autocomplete')
-        
-        response = self.client.get(url + '?q=PRODUCTO')
-        data = json.loads(response.content)
-        
-        self.assertEqual(len(data['results']), 2)
-    
-    def test_item_autocomplete_partial_match(self):
-        """Test item partial matching"""
-        url = reverse('item_autocomplete')
-        
-        response = self.client.get(url + '?q=special')
-        data = json.loads(response.content)
-        
-        self.assertEqual(len(data['results']), 1)
-        self.assertEqual(data['results'][0]['text'], 'Producto B Special')
-
-
 class IntegrationTests(AutocompleteTestCase):
     """Integration tests for autocomplete functionality"""
     
@@ -335,23 +275,63 @@ class IntegrationTests(AutocompleteTestCase):
         """Test that liquidacion form loads and includes autocomplete JavaScript"""
         url = reverse('liquidacion_create')
         response = self.client.get(url)
-        
+
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'cliente-autocomplete')
         self.assertContains(response, 'proveedor-autocomplete')
         self.assertContains(response, 'initializeClienteAutocomplete')
         self.assertContains(response, 'initializeProveedorAutocomplete')
+
+    def test_liquidacion_proforma_and_orden_de_compra_fields(self):
+        """Test that proforma and orden_de_compra are saved and retrieved correctly"""
+        liquidacion = Liquidacion.objects.create(
+            fecha='2026-01-01',
+            cliente=self.cliente1,
+            numero_liquidacion='LIQ-001',
+            proforma='PRO-123',
+            orden_de_compra='OC-456',
+            numero_despacho='DES-001',
+            clase=Liquidacion.ClaseChoices.IMPORTACION,
+            numero_factura_comercial='FAC-001',
+            partida_arancelaria='1234.56',
+            ad_valorem='10%',
+            valor_imponible='1000.00',
+            moneda_valor_imponible=Liquidacion.MonedaChoices.USD,
+            equivalente_gs='7000000',
+            tipo_cambio='7000',
+            proveedor=self.proveedor1,
+        )
+        self.assertEqual(liquidacion.proforma, 'PRO-123')
+        self.assertEqual(liquidacion.orden_de_compra, 'OC-456')
+
+    def test_liquidacion_proforma_and_orden_de_compra_optional(self):
+        """Test that proforma and orden_de_compra are optional"""
+        liquidacion = Liquidacion.objects.create(
+            fecha='2026-01-01',
+            cliente=self.cliente1,
+            numero_liquidacion='LIQ-002',
+            numero_despacho='DES-002',
+            clase=Liquidacion.ClaseChoices.IMPORTACION,
+            numero_factura_comercial='FAC-002',
+            partida_arancelaria='1234.56',
+            ad_valorem='10%',
+            valor_imponible='1000.00',
+            moneda_valor_imponible=Liquidacion.MonedaChoices.USD,
+            equivalente_gs='7000000',
+            tipo_cambio='7000',
+            proveedor=self.proveedor1,
+        )
+        self.assertIsNone(liquidacion.proforma)
+        self.assertIsNone(liquidacion.orden_de_compra)
     
     def test_autocomplete_api_endpoints_in_javascript(self):
         """Test that JavaScript calls the correct API endpoints"""
         url = reverse('liquidacion_create')
         response = self.client.get(url)
-        
-        # Check that the JavaScript includes the correct API endpoints
+
         self.assertContains(response, '/liquidaciones/api/cliente-autocomplete/')
         self.assertContains(response, '/liquidaciones/api/proveedor-autocomplete/')
-        self.assertContains(response, '/liquidaciones/api/item-autocomplete/')
-    
+
     def test_autocomplete_performance(self):
         """Test autocomplete performance with larger dataset"""
         import time
@@ -390,7 +370,6 @@ class ErrorHandlingTests(TestCase):
         urls = [
             reverse('cliente_autocomplete'),
             reverse('proveedor_autocomplete'),
-            reverse('item_autocomplete')
         ]
         
         for url in urls:
@@ -406,8 +385,7 @@ class ErrorHandlingTests(TestCase):
         very_long_query = 'a' * 1000
         urls = [
             reverse('cliente_autocomplete'),
-            reverse('proveedor_autocomplete'), 
-            reverse('item_autocomplete')
+            reverse('proveedor_autocomplete'),
         ]
         
         for url in urls:

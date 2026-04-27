@@ -140,6 +140,14 @@
               >
               {{ form.numero_liquidacion }}
             </div>
+            <div class="form-row">
+              <label
+                for="{{ form.proforma.id_for_label }}"
+                class="form-label"
+                >Proforma Nº:</label
+              >
+              {{ form.proforma }}
+            </div>
           </div>
 
           <div class="col-md-6">
@@ -164,6 +172,14 @@
                 >Número de Despacho:</label
               >
               {{ form.numero_despacho }}
+            </div>
+            <div class="form-row">
+              <label
+                for="{{ form.orden_de_compra.id_for_label }}"
+                class="form-label"
+                >Orden de Compra Nº:</label
+              >
+              {{ form.orden_de_compra }}
             </div>
           </div>
         </div>
@@ -194,19 +210,7 @@
             <div class="row g-3">
               <div class="col-md-3">
                 <label class="form-label"><strong>Item:</strong></label>
-                <div class="autocomplete-wrapper">
-                  <input
-                    type="text"
-                    class="form-control item-autocomplete"
-                    placeholder="Buscar item..."
-                    autocomplete="off"
-                    value="{% if form.instance.item %}{{ form.instance.item.descripcion }}{% endif %}"
-                    data-selected-id="{% if form.item.value %}{{ form.item.value }}{% endif %}"
-                    tabindex="1"
-                  />
-                  {{ form.item }}
-                  <div class="autocomplete-results" style="display: none"></div>
-                </div>
+                {{ form.item }}
               </div>
               <div class="col-md-2">
                 <label class="form-label"><strong>Monto:</strong></label>
@@ -284,6 +288,18 @@
                 >Ad Valorem:</label
               >
               {{ form.ad_valorem }}
+            </div>
+            <div class="form-row">
+              <label for="{{ form.factura.id_for_label }}" class="form-label">Factura:</label>
+              {{ form.factura }}
+            </div>
+            <div class="form-row">
+              <label for="{{ form.flete.id_for_label }}" class="form-label">Flete:</label>
+              {{ form.flete }}
+            </div>
+            <div class="form-row">
+              <label for="{{ form.seguro.id_for_label }}" class="form-label">Seguro:</label>
+              {{ form.seguro }}
             </div>
             <div class="form-row">
               <label
@@ -400,126 +416,6 @@
           let formIndex = {{ formset.total_form_count }};
 
           // Autocomplete functionality
-          function initializeAutocomplete(wrapper) {
-              console.log('=== initializeAutocomplete called ===');
-              console.log('Wrapper:', wrapper);
-              const input = wrapper.querySelector('.item-autocomplete');
-              const hiddenInput = wrapper.querySelector('input[name*="item"]');
-              const resultsDiv = wrapper.querySelector('.autocomplete-results');
-              let selectedIndex = -1;
-              let searchTimeout;
-
-              console.log('Elements found:', {
-                  input: input,
-                  hiddenInput: hiddenInput,
-                  resultsDiv: resultsDiv
-              });
-
-              if (!input || !hiddenInput || !resultsDiv) {
-                  console.log('❌ Missing required elements, aborting autocomplete init');
-                  return;
-              }
-
-              console.log('✅ All elements found, setting up event listeners');
-
-              input.addEventListener('input', function() {
-                  const query = this.value.trim();
-                  console.log('Input event triggered, query:', query);
-                  selectedIndex = -1;
-
-                  clearTimeout(searchTimeout);
-
-                  if (query.length < 2) {
-                      resultsDiv.style.display = 'none';
-                      hiddenInput.value = '';
-                      return;
-                  }
-
-                  searchTimeout = setTimeout(() => {
-                      console.log('Fetching autocomplete for query:', query);
-                      fetch(`/liquidaciones/api/item-autocomplete/?q=${encodeURIComponent(query)}`)
-                          .then(response => {
-                              console.log('Fetch response:', response);
-                              return response.json();
-                          })
-                          .then(data => {
-                              console.log('Autocomplete data received:', data);
-                              displayResults(data.results, resultsDiv, input, hiddenInput);
-                          })
-                          .catch(error => {
-                              console.error('Error fetching autocomplete results:', error);
-                              resultsDiv.style.display = 'none';
-                          });
-                  }, 300);
-              });
-
-              input.addEventListener('keydown', function(e) {
-                  const items = resultsDiv.querySelectorAll('.autocomplete-item');
-
-                  if (e.key === 'ArrowDown') {
-                      e.preventDefault();
-                      selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
-                      updateSelection(items, selectedIndex);
-                  } else if (e.key === 'ArrowUp') {
-                      e.preventDefault();
-                      selectedIndex = Math.max(selectedIndex - 1, 0);
-                      updateSelection(items, selectedIndex);
-                  } else if (e.key === 'Enter') {
-                      e.preventDefault();
-                      if (selectedIndex >= 0 && items[selectedIndex]) {
-                          selectItem(items[selectedIndex], input, hiddenInput, resultsDiv);
-                      }
-                  } else if (e.key === 'Escape') {
-                      resultsDiv.style.display = 'none';
-                      selectedIndex = -1;
-                  }
-              });
-
-              // Close results when clicking outside
-              document.addEventListener('click', function(e) {
-                  if (!wrapper.contains(e.target)) {
-                      resultsDiv.style.display = 'none';
-                      selectedIndex = -1;
-                  }
-              });
-          }
-
-          function displayResults(results, resultsDiv, input, hiddenInput) {
-              if (results.length === 0) {
-                  resultsDiv.style.display = 'none';
-                  return;
-              }
-
-              resultsDiv.innerHTML = '';
-              results.forEach((item, index) => {
-                  const div = document.createElement('div');
-                  div.className = 'autocomplete-item';
-                  div.textContent = item.text;
-                  div.dataset.id = item.id;
-
-                  div.addEventListener('click', () => {
-                      selectItem(div, input, hiddenInput, resultsDiv);
-                  });
-
-                  resultsDiv.appendChild(div);
-              });
-
-              resultsDiv.style.display = 'block';
-          }
-
-          function updateSelection(items, selectedIndex) {
-              items.forEach((item, index) => {
-                  item.classList.toggle('selected', index === selectedIndex);
-              });
-          }
-
-          function selectItem(item, input, hiddenInput, resultsDiv) {
-              input.value = item.textContent;
-              hiddenInput.value = item.dataset.id;
-              input.dataset.selectedId = item.dataset.id; // Store selected ID for form validation errors
-              resultsDiv.style.display = 'none';
-          }
-
           // Cliente Autocomplete functionality
           function initializeClienteAutocomplete(wrapper) {
               console.log('=== initializeClienteAutocomplete called ===');
@@ -852,16 +748,8 @@
           }
 
           function formatInput(input) {
-              const cursorPos = input.selectionStart;
               const value = unformatNumber(input.value);
-              const formatted = formatNumber(value);
-              input.value = formatted;
-
-              // Try to restore cursor position
-              const newCursorPos = Math.min(cursorPos + (formatted.length - input.value.length), formatted.length);
-              setTimeout(() => {
-                  input.setSelectionRange(newCursorPos, newCursorPos);
-              }, 0);
+              input.value = formatNumber(value);
           }
 
           // Initialize number formatting for existing fields
@@ -874,80 +762,30 @@
 
                   // Only add event listeners to non-readonly fields
                   if (!input.readOnly) {
-                      // Add input event listener
+                      // Only recalculate on input, format only on blur
                       input.addEventListener('input', function() {
-                          formatInput(this);
-                          // Recalculate totals after formatting
                           const row = this.closest('.item-row');
                           if (row) {
                               calculateSubtotal(row);
                           }
                       });
 
-                      // Format on blur
+                      // Format on blur — user has finished typing
                       input.addEventListener('blur', function() {
                           formatInput(this);
+                          const row = this.closest('.item-row');
+                          if (row) {
+                              calculateSubtotal(row);
+                          }
                       });
                   }
               });
           }
 
-          // Function to restore item descriptions after form errors
-          function restoreItemDescriptions() {
-              document.querySelectorAll('.item-autocomplete').forEach(input => {
-                  const hiddenInput = input.parentNode.querySelector('input[name*="item"]');
-                  
-                  // Check both hidden input value and data-selected-id attribute
-                  const itemId = hiddenInput?.value || input.dataset.selectedId;
-                  
-                  // If we have an item ID but no visible text, fetch the description
-                  if (itemId && !input.value.trim()) {
-                      console.log(`Restoring item description for item ID: ${itemId}`);
-                      fetch(`/liquidaciones/api/item-autocomplete/?id=${itemId}`)
-                          .then(response => response.json())
-                          .then(data => {
-                              if (data.results && data.results.length > 0) {
-                                  input.value = data.results[0].text;
-                                  if (hiddenInput) hiddenInput.value = itemId; // Ensure hidden input is set
-                                  console.log(`Restored item description: ${data.results[0].text}`);
-                              }
-                          })
-                          .catch(error => {
-                              console.error('Error fetching item description:', error);
-                          });
-                  }
-              });
-              
-              // Also restore cliente and proveedor values
-              const clienteInput = document.querySelector('.cliente-autocomplete');
-              const clienteHidden = document.querySelector('input[name="cliente"]');
-              if (clienteInput && clienteHidden && clienteHidden.value && !clienteInput.value.trim()) {
-                  // Check if we have initial value in dataset or try to preserve the value from the server
-                  if (clienteInput.dataset.initialValue) {
-                      clienteInput.value = clienteInput.dataset.initialValue;
-                  } else {
-                      // Try to fetch from server if available
-                      fetch(`/liquidaciones/api/cliente-autocomplete/?id=${clienteHidden.value}`)
-                          .then(response => response.json())
-                          .then(data => {
-                              if (data.results && data.results.length > 0) {
-                                  clienteInput.value = data.results[0].text;
-                              }
-                          })
-                          .catch(error => {
-                              console.log('Could not restore cliente name from API');
-                          });
-                  }
-              }
-          }
-
           // Initialize autocomplete for existing forms
           console.log('DOM loaded, looking for .autocomplete-wrapper elements...');
           document.querySelectorAll('.autocomplete-wrapper').forEach(wrapper => {
-              if (wrapper.querySelector('.item-autocomplete')) {
-                  console.log('Initializing item autocomplete for wrapper:', wrapper);
-                  initializeAutocomplete(wrapper);
-              } else if (wrapper.querySelector('.cliente-autocomplete')) {
+              if (wrapper.querySelector('.cliente-autocomplete')) {
                   console.log('Initializing cliente autocomplete for wrapper:', wrapper);
                   initializeClienteAutocomplete(wrapper);
               } else if (wrapper.querySelector('.proveedor-autocomplete')) {
@@ -959,11 +797,24 @@
               }
           });
 
-          // Restore item descriptions for form validation errors
-          restoreItemDescriptions();
-
           // Initialize number formatting
           initializeNumberFormatting();
+
+          // Auto-calculate valor_imponible = factura + flete + seguro
+          function updateValorImponible() {
+              const factura = unformatNumber(document.querySelector('input[name="factura"]')?.value);
+              const flete = unformatNumber(document.querySelector('input[name="flete"]')?.value);
+              const seguro = unformatNumber(document.querySelector('input[name="seguro"]')?.value);
+              const total = factura + flete + seguro;
+              const valorImponible = document.querySelector('input[name="valor_imponible"]');
+              if (valorImponible) valorImponible.value = formatNumber(total);
+          }
+          ['factura', 'flete', 'seguro'].forEach(name => {
+              const el = document.querySelector(`input[name="${name}"]`);
+              el?.addEventListener('input', updateValorImponible);
+              el?.addEventListener('blur', updateValorImponible);
+          });
+          updateValorImponible();
 
           // Initialize date picker
           const dateInput = document.querySelector('input[name="fecha"]');
@@ -1071,11 +922,7 @@
                   <div class="row g-3">
                       <div class="col-md-3">
                           <label class="form-label"><strong>Item:</strong></label>
-                          <div class="autocomplete-wrapper">
-                              <input type="text" class="form-control item-autocomplete" placeholder="Buscar item..." autocomplete="off" tabindex="0">
-                              <input type="hidden" name="liquidacionitem_set-${formIndex}-item" id="id_liquidacionitem_set-${formIndex}-item">
-                              <div class="autocomplete-results" style="display: none;"></div>
-                          </div>
+                          <input type="text" name="liquidacionitem_set-${formIndex}-item" id="id_liquidacionitem_set-${formIndex}-item" class="form-control" placeholder="Descripción del item">
                       </div>
                       <div class="col-md-2">
                           <label class="form-label"><strong>Monto:</strong></label>
@@ -1104,21 +951,9 @@
 
               formsetDiv.appendChild(newForm);
 
-              // Initialize autocomplete for the new form
-              console.log('Looking for autocomplete wrapper in new form...');
-              const newWrapper = newForm.querySelector('.autocomplete-wrapper');
-              console.log('New wrapper found:', newWrapper);
-              if (newWrapper) {
-                  console.log('Initializing autocomplete for new form');
-                  initializeAutocomplete(newWrapper);
-              } else {
-                  console.log('❌ No autocomplete wrapper found in new form');
-              }
-
               // Initialize number formatting for new fields
               newForm.querySelectorAll('.formatted-number:not([readonly])').forEach(input => {
                   input.addEventListener('input', function() {
-                      formatInput(this);
                       const row = this.closest('.item-row');
                       if (row) {
                           calculateSubtotal(row);
@@ -1127,6 +962,10 @@
 
                   input.addEventListener('blur', function() {
                       formatInput(this);
+                      const row = this.closest('.item-row');
+                      if (row) {
+                          calculateSubtotal(row);
+                      }
                   });
               });
 
