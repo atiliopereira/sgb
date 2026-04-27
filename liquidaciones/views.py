@@ -5,7 +5,6 @@ from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from clientes.models import Cliente
-from items.models import Item
 
 from .forms import LiquidacionForm, LiquidacionItemFormSet, PagoForm, BancoForm, ProcedenciaForm, ProveedorForm, PlanillaGastosForm, PlanillaGastosItemFormSet
 from .models import Banco, Liquidacion, LiquidacionItem, Pago, Proveedor, Procedencia, PlanillaGastos, PlanillaGastosItem
@@ -48,7 +47,7 @@ def liquidacion_create(request):
 
                 for instance in instances:
                     # Check if item_id exists instead of accessing the item object
-                    if instance.item_id:  # Only save if item is selected
+                    if instance.item:  # Only save if item is filled
                         instance.liquidacion = liquidacion
                         # Ensure numeric fields have default values if empty
                         if not instance.retencion:
@@ -109,10 +108,7 @@ def liquidacion_create(request):
                     and form_instance.cleaned_data
                     and form_instance.cleaned_data.get("item")
                 ):
-                    # Ensure item data is preserved in the form
-                    form_instance.initial["item"] = form_instance.cleaned_data[
-                        "item"
-                    ].id
+                    form_instance.initial["item"] = form_instance.cleaned_data["item"]
     else:
         print("=== GET REQUEST - RENDERING EMPTY FORM ===")
         form = LiquidacionForm()
@@ -168,7 +164,7 @@ def liquidacion_edit(request, pk):
                 saved_items = []
                 for instance in instances:
                     # Check if item_id exists instead of accessing the item object
-                    if instance.item_id:  # Only save if item is selected
+                    if instance.item:  # Only save if item is filled
                         # Ensure numeric fields have default values if empty
                         if not instance.retencion:
                             instance.retencion = 0
@@ -216,10 +212,7 @@ def liquidacion_edit(request, pk):
                     and form_instance.cleaned_data
                     and form_instance.cleaned_data.get("item")
                 ):
-                    # Ensure item data is preserved in the form
-                    form_instance.initial["item"] = form_instance.cleaned_data[
-                        "item"
-                    ].id
+                    form_instance.initial["item"] = form_instance.cleaned_data["item"]
     else:
         form = LiquidacionForm(instance=liquidacion)
         # For edit, only show existing items, no extra forms
@@ -275,25 +268,6 @@ def liquidacion_list(request):
     }
     return render(request, "liquidaciones/liquidacion_list.html", context)
 
-
-def item_autocomplete(request):
-    query = request.GET.get("q", "")
-    item_id = request.GET.get("id", "")
-
-    if item_id:
-        # Fetch specific item by ID for restoration after form errors
-        try:
-            item = Item.objects.get(id=item_id)
-            results = [{"id": item.id, "text": item.descripcion}]
-        except Item.DoesNotExist:
-            results = []
-    elif query:
-        items = Item.objects.filter(descripcion__icontains=query)[:10]
-        results = [{"id": item.id, "text": item.descripcion} for item in items]
-    else:
-        results = []
-
-    return JsonResponse({"results": results})
 
 
 def pago_create(request):

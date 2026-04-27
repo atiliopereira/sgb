@@ -67,7 +67,6 @@ urlpatterns = [
         name="planilla_gastos_delete",
     ),
     # API URLs
-    path("api/item-autocomplete/", views.item_autocomplete, name="item_autocomplete"),
     path(
         "api/cliente-autocomplete/",
         views.cliente_autocomplete,

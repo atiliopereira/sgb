@@ -1,7 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory
 from .models import Liquidacion, LiquidacionItem, Proveedor, Pago, Banco, Procedencia, PlanillaGastos, PlanillaGastosItem
-from items.models import Item
 
 
 class LiquidacionForm(forms.ModelForm):
@@ -12,14 +11,19 @@ class LiquidacionForm(forms.ModelForm):
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'cliente': forms.HiddenInput(),
             'numero_liquidacion': forms.TextInput(attrs={'class': 'form-control'}),
+            'proforma': forms.TextInput(attrs={'class': 'form-control'}),
+            'orden_de_compra': forms.TextInput(attrs={'class': 'form-control'}),
             'numero_despacho': forms.TextInput(attrs={'class': 'form-control'}),
             'clase': forms.Select(attrs={'class': 'form-control'}),
             'numero_factura_comercial': forms.TextInput(attrs={'class': 'form-control'}),
             'partida_arancelaria': forms.TextInput(attrs={'class': 'form-control'}),
             'ad_valorem': forms.TextInput(attrs={'class': 'form-control'}),
-            'valor_imponible': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'factura': forms.TextInput(attrs={'class': 'form-control formatted-number', 'style': 'text-align:right', 'placeholder': '0'}),
+            'flete': forms.TextInput(attrs={'class': 'form-control formatted-number', 'style': 'text-align:right', 'placeholder': '0'}),
+            'seguro': forms.TextInput(attrs={'class': 'form-control formatted-number', 'style': 'text-align:right', 'placeholder': '0'}),
+            'valor_imponible': forms.TextInput(attrs={'class': 'form-control formatted-number', 'style': 'text-align:right', 'placeholder': '0', 'readonly': True}),
             'moneda_valor_imponible': forms.Select(attrs={'class': 'form-control'}),
-            'equivalente_gs': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'equivalente_gs': forms.TextInput(attrs={'class': 'form-control formatted-number', 'style': 'text-align:right', 'placeholder': '0'}),
             'tipo_cambio': forms.TextInput(attrs={'class': 'form-control'}),
             'proveedor': forms.Select(attrs={
                 'class': 'form-control',
@@ -31,10 +35,14 @@ class LiquidacionForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Customize proveedor queryset to show procedencia
         self.fields['proveedor'].queryset = Proveedor.objects.select_related('procedencia').all()
-        # The label_from_instance method will be used for display
         self.fields['proveedor'].label_from_instance = self._proveedor_label
+        # Override decimal fields to CharField so Paraguay-formatted values pass validation
+        for field_name in ('factura', 'flete', 'seguro', 'valor_imponible', 'equivalente_gs'):
+            self.fields[field_name] = forms.CharField(
+                required=self.fields[field_name].required,
+                widget=self.Meta.widgets[field_name],
+            )
     
     def _proveedor_label(self, obj):
         """Custom label for proveedor with procedencia"""
@@ -43,13 +51,38 @@ class LiquidacionForm(forms.ModelForm):
         else:
             return f"{obj.nombre} (Sin especificar)"
 
+    def _parse_decimal(self, value):
+        from decimal import Decimal
+        if not value and value != 0:
+            return Decimal('0')
+        cleaned = str(value).strip().replace('.', '').replace(',', '.')
+        try:
+            return Decimal(cleaned)
+        except Exception:
+            raise forms.ValidationError('Ingrese un valor numérico válido')
+
+    def clean_factura(self):
+        return self._parse_decimal(self.cleaned_data.get('factura'))
+
+    def clean_flete(self):
+        return self._parse_decimal(self.cleaned_data.get('flete'))
+
+    def clean_seguro(self):
+        return self._parse_decimal(self.cleaned_data.get('seguro'))
+
+    def clean_equivalente_gs(self):
+        return self._parse_decimal(self.cleaned_data.get('equivalente_gs'))
+
+    def clean_valor_imponible(self):
+        return self._parse_decimal(self.cleaned_data.get('valor_imponible'))
+
 
 class LiquidacionItemForm(forms.ModelForm):
     class Meta:
         model = LiquidacionItem
         fields = ['item', 'monto', 'iva', 'retencion']
         widgets = {
-            'item': forms.HiddenInput(),
+            'item': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Descripción del item'}),
             'monto': forms.TextInput(attrs={
                 'class': 'form-control monto-input formatted-number', 
                 'style': 'text-align:right', 
@@ -84,13 +117,9 @@ class LiquidacionItemForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['item'].queryset = Item.objects.all()
-        
-        # Make fields optional for formset validation
         self.fields['item'].required = False
         self.fields['retencion'].required = False
-        
-        # Initialize subtotal if instance exists
+
         instance = getattr(self, 'instance', None)
         if instance and instance.pk:
             self.initial['subtotal'] = instance.subtotal

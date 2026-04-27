@@ -16,7 +16,6 @@ import json
 
 from clientes.models import Cliente
 from liquidaciones.models import Procedencia, Proveedor
-from items.models import Item
 
 
 class AutocompleteFrontendTestCase(TestCase):
@@ -73,8 +72,6 @@ class AutocompleteFrontendTestCase(TestCase):
             nombre='Proveedor Paraguay S.A.',
             procedencia=self.procedencia_py
         )
-        
-        self.item1 = Item.objects.create(descripcion='Producto Test A')
         
     def test_cliente_autocomplete_frontend(self):
         """Test cliente autocomplete in browser"""
