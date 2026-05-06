@@ -122,20 +122,20 @@
                         <div class="row g-3">
                             <div class="col-sm-6">
                                 <strong>Factura:</strong><br>
-                                {{ liquidacion.factura|format_integer }}
+                                {{ liquidacion.factura|format_decimal }}
                             </div>
                             <div class="col-sm-6">
                                 <strong>Flete:</strong><br>
-                                {{ liquidacion.flete|format_integer }}
+                                {{ liquidacion.flete|format_decimal }}
                             </div>
                             <div class="col-sm-6">
                                 <strong>Seguro:</strong><br>
-                                {{ liquidacion.seguro|format_integer }}
+                                {{ liquidacion.seguro|format_decimal }}
                             </div>
                             <div class="col-sm-6">
                                 <strong>Valor Imponible:</strong><br>
                                 <i class="fas fa-money-bill me-1 text-success"></i>
-                                {{ liquidacion.valor_imponible|format_integer }} {{ liquidacion.get_moneda_valor_imponible_display }}
+                                {{ liquidacion.valor_imponible|format_decimal }} {{ liquidacion.get_moneda_valor_imponible_display }}
                             </div>
                             <div class="col-sm-6">
                                 <strong>Equivalente Gs:</strong><br>

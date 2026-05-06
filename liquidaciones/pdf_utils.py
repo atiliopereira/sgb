@@ -311,8 +311,16 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
     else:
         items_data = [["", "Sub-Total", "I.V.A.", "Total"]]
 
+    style_item = ParagraphStyle(
+        "ItemDesc",
+        parent=styles["Normal"],
+        fontSize=9,
+        fontName="Helvetica",
+        leading=11,
+    )
+
     for item_liq in items_liquidacion:
-        descripcion = item_liq.item or ""
+        descripcion = Paragraph(item_liq.item or "", style_item)
         subtotal = f"Gs. {item_liq.monto:,.0f}".replace(",", ".")
         iva = f"{item_liq.iva:,.0f}".replace(",", ".") if item_liq.iva else ""
         total = f"{item_liq.subtotal:,.0f}".replace(",", ".")
@@ -354,7 +362,7 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
             [
                 ("ALIGN", (0, 0), (0, -1), "LEFT"),
                 ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
                 ("FONTNAME", (0, 1), (-1, -2), "Helvetica"),
                 ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
@@ -383,15 +391,15 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
 
     # Información adicional en dos columnas
     detalle_data = [
-        ["Partida Arancelaria:", liquidacion.partida_arancelaria or "", "Factura:", f"{liquidacion.factura:,.2f}".replace(",", ".") if liquidacion.factura else ""],
-        ["Ad. Val.:", liquidacion.ad_valorem or "", "Flete:", f"{liquidacion.flete:,.2f}".replace(",", ".") if liquidacion.flete else ""],
+        ["Partida Arancelaria:", liquidacion.partida_arancelaria or "", "Factura:", f"{liquidacion.factura:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if liquidacion.factura else ""],
+        ["Ad. Val.:", liquidacion.ad_valorem or "", "Flete:", f"{liquidacion.flete:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if liquidacion.flete else ""],
         [
             "Valor Imponible en " + liquidacion.moneda_valor_imponible + ":",
-            f"{liquidacion.valor_imponible:,.2f}".replace(",", ".")
+            f"{liquidacion.valor_imponible:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
             if liquidacion.valor_imponible
             else "",
             "Seguro:",
-            f"{liquidacion.seguro:,.2f}".replace(",", ".") if liquidacion.seguro else "",
+            f"{liquidacion.seguro:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if liquidacion.seguro else "",
         ],
         [
             "Equivalente a GS.:",
@@ -399,7 +407,7 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
             if liquidacion.equivalente_gs
             else "",
             "V.I.:",
-            f"{liquidacion.valor_imponible:,.2f}".replace(",", ".")
+            f"{liquidacion.valor_imponible:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
             if liquidacion.valor_imponible
             else "",
         ],
