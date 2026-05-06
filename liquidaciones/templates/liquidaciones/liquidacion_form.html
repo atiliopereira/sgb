@@ -735,14 +735,14 @@
           }
 
           // Number formatting functions
+
+          // Integer formatting (Guaraníes): separador de miles con punto, sin decimales
           function formatNumber(num) {
-              // Convert to integer and format with thousands separators
               const intValue = Math.round(parseFloat(num) || 0);
-              return intValue.toLocaleString('es-PY'); // Paraguay locale for thousands separator
+              return intValue.toLocaleString('es-PY');
           }
 
           function unformatNumber(str) {
-              // Remove thousands separators and convert to number
               if (!str) return 0;
               return parseFloat(str.toString().replace(/\./g, '') || '0');
           }
@@ -752,17 +752,32 @@
               input.value = formatNumber(value);
           }
 
+          // Decimal formatting (USD/divisas): separador de miles con punto, 2 decimales con coma
+          function formatDecimal(num) {
+              // Accepts a plain JS number — do NOT pass Paraguay-formatted strings here
+              const parsed = parseFloat(num) || 0;
+              return parsed.toLocaleString('es-PY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          }
+
+          function unformatDecimal(str) {
+              if (!str) return 0;
+              // Eliminar puntos de miles, reemplazar coma decimal por punto
+              return parseFloat(str.toString().replace(/\./g, '').replace(',', '.') || '0') || 0;
+          }
+
+          function formatDecimalInput(input) {
+              const value = unformatDecimal(input.value);
+              input.value = formatDecimal(value);
+          }
+
           // Initialize number formatting for existing fields
           function initializeNumberFormatting() {
               document.querySelectorAll('.formatted-number').forEach(input => {
-                  // Format initial value if exists
                   if (input.value && input.value !== '0') {
                       input.value = formatNumber(input.value);
                   }
 
-                  // Only add event listeners to non-readonly fields
                   if (!input.readOnly) {
-                      // Only recalculate on input, format only on blur
                       input.addEventListener('input', function() {
                           const row = this.closest('.item-row');
                           if (row) {
@@ -770,13 +785,27 @@
                           }
                       });
 
-                      // Format on blur — user has finished typing
                       input.addEventListener('blur', function() {
                           formatInput(this);
                           const row = this.closest('.item-row');
                           if (row) {
                               calculateSubtotal(row);
                           }
+                      });
+                  }
+              });
+
+              document.querySelectorAll('.formatted-decimal').forEach(input => {
+                  if (input.value && input.value !== '0') {
+                      // Django renders DecimalField as "1234.56" (dot = decimal separator, no thousands)
+                      // parseFloat handles this correctly; do NOT use unformatDecimal here
+                      input.value = formatDecimal(parseFloat(input.value) || 0);
+                  }
+
+                  if (!input.readOnly) {
+                      input.addEventListener('blur', function() {
+                          formatDecimalInput(this);
+                          updateValorImponible();
                       });
                   }
               });
@@ -802,12 +831,12 @@
 
           // Auto-calculate valor_imponible = factura + flete + seguro
           function updateValorImponible() {
-              const factura = unformatNumber(document.querySelector('input[name="factura"]')?.value);
-              const flete = unformatNumber(document.querySelector('input[name="flete"]')?.value);
-              const seguro = unformatNumber(document.querySelector('input[name="seguro"]')?.value);
+              const factura = unformatDecimal(document.querySelector('input[name="factura"]')?.value);
+              const flete = unformatDecimal(document.querySelector('input[name="flete"]')?.value);
+              const seguro = unformatDecimal(document.querySelector('input[name="seguro"]')?.value);
               const total = factura + flete + seguro;
               const valorImponible = document.querySelector('input[name="valor_imponible"]');
-              if (valorImponible) valorImponible.value = formatNumber(total);
+              if (valorImponible) valorImponible.value = formatDecimal(total);
           }
           ['factura', 'flete', 'seguro'].forEach(name => {
               const el = document.querySelector(`input[name="${name}"]`);
@@ -1039,6 +1068,17 @@
                       const numericValue = unformatNumber(input.value);
                       input.value = numericValue.toString();
                       console.log(`Converted ${input.name}: "${originalValue}" -> "${numericValue}"`);
+                  }
+              });
+
+              // Convert decimal fields — send with comma as decimal separator ("1234,56")
+              // so _parse_decimal on the backend correctly parses the value without stripping decimals
+              document.querySelectorAll('.formatted-decimal').forEach(input => {
+                  if (input.name) {
+                      const originalValue = input.value;
+                      const numericValue = unformatDecimal(input.value);
+                      input.value = numericValue.toFixed(2).replace('.', ',');
+                      console.log(`Converted decimal ${input.name}: "${originalValue}" -> "${input.value}"`);
                   }
               });
 
