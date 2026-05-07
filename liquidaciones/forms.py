@@ -30,6 +30,7 @@ class LiquidacionForm(forms.ModelForm):
                 'data-live-search': 'true',
                 'data-size': '5'
             }),
+            'detalle_de_contenido': forms.TextInput(attrs={'class': 'form-control'}),
             'planilla_gastos': forms.HiddenInput(),
         }
 

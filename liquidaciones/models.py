@@ -53,6 +53,7 @@ class Liquidacion(models.Model):
     equivalente_gs = models.DecimalField(max_digits=12, decimal_places=2)
     tipo_cambio = models.CharField(max_length=20)
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE)
+    detalle_de_contenido = models.CharField(max_length=50, blank=True, null=True)
     planilla_gastos = models.ForeignKey(
         "PlanillaGastos", on_delete=models.SET_NULL, null=True, blank=True
     )
