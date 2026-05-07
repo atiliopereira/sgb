@@ -386,7 +386,8 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
     story.append(
         Paragraph("<b>MARCA - Nº DE BULTOS - DETALLE DEL CONTENIDO</b>", style_bold)
     )
-    story.append(Paragraph("01) Mercadería según factura comercial.-", style_normal))
+    detalle_contenido = liquidacion.detalle_de_contenido or "Mercadería según factura comercial"
+    story.append(Paragraph(f"01) {detalle_contenido}.-", style_normal))
     story.append(Spacer(1, 0.2 * inch))
 
     # Información adicional en dos columnas

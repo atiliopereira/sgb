@@ -105,6 +105,10 @@
                                 {{ liquidacion.numero_factura_comercial }}
                             </div>
                             <div class="col-sm-6">
+                                <strong>Detalle de Contenido:</strong><br>
+                                {{ liquidacion.detalle_de_contenido|default:"-" }}
+                            </div>
+                            <div class="col-sm-6">
                                 <strong>Partida Arancelaria:</strong><br>
                                 {{ liquidacion.partida_arancelaria }}
                             </div>
