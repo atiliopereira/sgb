@@ -362,12 +362,12 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
         )
         # 7.4" usable: description gets the rest, numeric cols 1.3" each
         col_widths = [
-            3 * inch,
-            0.3 * inch,
-            1.2 * inch,
-            0.9 * inch,
+            3.4 * inch,
+            0.4 * inch,
+            1 * inch,
             0.8 * inch,
-            1.2 * inch,
+            0.8 * inch,
+            1 * inch,
         ]
     else:
         items_data.append(
@@ -381,11 +381,11 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
         )
         # 7.4" usable: description gets the rest, numeric cols 1.6" each
         col_widths = [
-            3 * inch,
-            0.3 * inch,
-            1.6 * inch,
-            0.9 * inch,
-            1.6 * inch,
+            3.4 * inch,
+            0.4 * inch,
+            1.4 * inch,
+            0.8 * inch,
+            1.4 * inch,
         ]
 
     items_table = Table(items_data, colWidths=col_widths)
