@@ -245,9 +245,18 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
 
     # Fecha
     meses_es = {
-        1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
-        5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
-        9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre",
+        1: "Enero",
+        2: "Febrero",
+        3: "Marzo",
+        4: "Abril",
+        5: "Mayo",
+        6: "Junio",
+        7: "Julio",
+        8: "Agosto",
+        9: "Septiembre",
+        10: "Octubre",
+        11: "Noviembre",
+        12: "Diciembre",
     }
     mes = meses_es[liquidacion.fecha.month]
     fecha_texto = f"Asunción, {liquidacion.fecha.strftime('%d')} de {mes} de {liquidacion.fecha.strftime('%Y')}"
@@ -307,9 +316,9 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
     has_retenciones = any(item.retencion for item in items_liquidacion)
 
     if has_retenciones:
-        items_data = [["", "Sub-Total", "I.V.A.", "Retención", "Total"]]
+        items_data = [["", "", "Sub-Total", "I.V.A.", "Retención", "Total"]]
     else:
-        items_data = [["", "Sub-Total", "I.V.A.", "Total"]]
+        items_data = [["", "", "Sub-Total", "I.V.A.", "Total"]]
 
     style_item = ParagraphStyle(
         "ItemDesc",
@@ -321,14 +330,18 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
 
     for item_liq in items_liquidacion:
         descripcion = Paragraph(item_liq.item or "", style_item)
-        subtotal = f"Gs. {item_liq.monto:,.0f}".replace(",", ".")
+        subtotal = f"{item_liq.monto:,.0f}".replace(",", ".")
         iva = f"{item_liq.iva:,.0f}".replace(",", ".") if item_liq.iva else ""
         total = f"{item_liq.subtotal:,.0f}".replace(",", ".")
         if has_retenciones:
-            retencion = f"{item_liq.retencion:,.0f}".replace(",", ".") if item_liq.retencion else ""
-            items_data.append([descripcion, subtotal, iva, retencion, total])
+            retencion = (
+                f"{item_liq.retencion:,.0f}".replace(",", ".")
+                if item_liq.retencion
+                else ""
+            )
+            items_data.append([descripcion, "Gs.", subtotal, iva, retencion, total])
         else:
-            items_data.append([descripcion, subtotal, iva, total])
+            items_data.append([descripcion, "Gs.", subtotal, iva, total])
 
     # Total
     total_subtotal = sum(item.monto or 0 for item in items_liquidacion)
@@ -337,24 +350,43 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
     total_general = sum(item.subtotal or 0 for item in items_liquidacion)
 
     if has_retenciones:
-        items_data.append([
-            "TOTAL",
-            f"Gs. {total_subtotal:,.0f}".replace(",", "."),
-            f"{total_iva:,.0f}".replace(",", "."),
-            f"{total_retencion:,.0f}".replace(",", "."),
-            f"{total_general:,.0f}".replace(",", "."),
-        ])
+        items_data.append(
+            [
+                "TOTAL",
+                "Gs.",
+                f"{total_subtotal:,.0f}".replace(",", "."),
+                f"{total_iva:,.0f}".replace(",", "."),
+                f"{total_retencion:,.0f}".replace(",", "."),
+                f"{total_general:,.0f}".replace(",", "."),
+            ]
+        )
         # 7.4" usable: description gets the rest, numeric cols 1.3" each
-        col_widths = [2.6 * inch, 1.2 * inch, 1.2 * inch, 1.2 * inch, 1.2 * inch]
+        col_widths = [
+            2.6 * inch,
+            0.3 * inch,
+            1.2 * inch,
+            0.9 * inch,
+            1.2 * inch,
+            1.2 * inch,
+        ]
     else:
-        items_data.append([
-            "TOTAL",
-            f"Gs. {total_subtotal:,.0f}".replace(",", "."),
-            f"{total_iva:,.0f}".replace(",", "."),
-            f"{total_general:,.0f}".replace(",", "."),
-        ])
+        items_data.append(
+            [
+                "TOTAL",
+                "Gs.",
+                f"{total_subtotal:,.0f}".replace(",", "."),
+                f"{total_iva:,.0f}".replace(",", "."),
+                f"{total_general:,.0f}".replace(",", "."),
+            ]
+        )
         # 7.4" usable: description gets the rest, numeric cols 1.6" each
-        col_widths = [2.6 * inch, 1.6 * inch, 1.6 * inch, 1.6 * inch]
+        col_widths = [
+            2.6 * inch,
+            0.3 * inch,
+            1.6 * inch,
+            1.3 * inch,
+            1.6 * inch,
+        ]
 
     items_table = Table(items_data, colWidths=col_widths)
     items_table.setStyle(
@@ -367,7 +399,8 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
                 ("FONTNAME", (0, 1), (-1, -2), "Helvetica"),
                 ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
                 ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+                ("LINEBELOW", (0, 0), (-1, -1), 0.5, colors.black),
+                ("LINEABOVE", (0, 0), (-1, 0), 0.5, colors.black),
                 ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
                 ("BACKGROUND", (0, -1), (-1, -1), colors.lightgrey),
             ]
@@ -386,21 +419,47 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
     story.append(
         Paragraph("<b>MARCA - Nº DE BULTOS - DETALLE DEL CONTENIDO</b>", style_bold)
     )
-    detalle_contenido = liquidacion.detalle_de_contenido or "Mercadería según factura comercial"
+    detalle_contenido = (
+        liquidacion.detalle_de_contenido or "Mercadería según factura comercial"
+    )
     story.append(Paragraph(f"01) {detalle_contenido}.-", style_normal))
     story.append(Spacer(1, 0.2 * inch))
 
     # Información adicional en dos columnas
     detalle_data = [
-        ["Partida Arancelaria:", liquidacion.partida_arancelaria or "", "Factura:", f"{liquidacion.factura:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if liquidacion.factura else ""],
-        ["Ad. Val.:", liquidacion.ad_valorem or "", "Flete:", f"{liquidacion.flete:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if liquidacion.flete else ""],
+        [
+            "Partida Arancelaria:",
+            liquidacion.partida_arancelaria or "",
+            "Factura:",
+            f"{liquidacion.factura:,.2f}".replace(",", "X")
+            .replace(".", ",")
+            .replace("X", ".")
+            if liquidacion.factura
+            else "",
+        ],
+        [
+            "Ad. Val.:",
+            liquidacion.ad_valorem or "",
+            "Flete:",
+            f"{liquidacion.flete:,.2f}".replace(",", "X")
+            .replace(".", ",")
+            .replace("X", ".")
+            if liquidacion.flete
+            else "",
+        ],
         [
             "Valor Imponible en " + liquidacion.moneda_valor_imponible + ":",
-            f"{liquidacion.valor_imponible:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            f"{liquidacion.valor_imponible:,.2f}".replace(",", "X")
+            .replace(".", ",")
+            .replace("X", ".")
             if liquidacion.valor_imponible
             else "",
             "Seguro:",
-            f"{liquidacion.seguro:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if liquidacion.seguro else "",
+            f"{liquidacion.seguro:,.2f}".replace(",", "X")
+            .replace(".", ",")
+            .replace("X", ".")
+            if liquidacion.seguro
+            else "",
         ],
         [
             "Equivalente a GS.:",
@@ -408,7 +467,9 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
             if liquidacion.equivalente_gs
             else "",
             "V.I.:",
-            f"{liquidacion.valor_imponible:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            f"{liquidacion.valor_imponible:,.2f}".replace(",", "X")
+            .replace(".", ",")
+            .replace("X", ".")
             if liquidacion.valor_imponible
             else "",
         ],
@@ -428,7 +489,7 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
     ]
 
     detalle_table = Table(
-        detalle_data, colWidths=[1.8 * inch, 1.5 * inch, 1 * inch, 1.2 * inch]
+        detalle_data, colWidths=[2 * inch, 2.8 * inch, 1 * inch, 1.2 * inch]
     )
     detalle_table.setStyle(
         TableStyle(
