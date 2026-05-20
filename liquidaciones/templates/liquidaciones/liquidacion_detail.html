@@ -151,12 +151,12 @@
                                 {{ liquidacion.tipo_cambio }}
                             </div>
                             <div class="col-sm-12">
-                                <strong>Proveedor:</strong><br>
+                                <strong>{% if liquidacion.clase == 'exportacion' %}Destinatario:{% else %}Proveedor:{% endif %}</strong><br>
                                 <i class="fas fa-truck me-1 text-secondary"></i>
                                 {{ liquidacion.proveedor.nombre }}
                             </div>
                             <div class="col-sm-12">
-                                <strong>Procedencia:</strong><br>
+                                <strong>{% if liquidacion.clase == 'exportacion' %}Destino:{% else %}Procedencia:{% endif %}</strong><br>
                                 <i class="fas fa-map-marker-alt me-1 text-info"></i>
                                 {% if liquidacion.proveedor.procedencia %}
                                     {{ liquidacion.proveedor.procedencia.nombre }}

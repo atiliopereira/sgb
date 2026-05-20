@@ -346,7 +346,7 @@
             </div>
             <div class="form-row">
               <label for="{{ form.proveedor.id_for_label }}" class="form-label"
-                >Proveedor:</label
+                >{% if form.instance.clase == 'exportacion' %}Destinatario:{% else %}Proveedor:{% endif %}</label
               >
               <div class="autocomplete-wrapper">
                 <input
@@ -1104,6 +1104,19 @@
           document.querySelectorAll('.item-row').forEach(row => {
               calculateSubtotal(row);
           });
+
+          // Actualizar etiqueta Proveedor/Destinatario según clase
+          const claseSelect = document.getElementById('id_clase');
+          const proveedorLabel = document.querySelector('label[for="{{ form.proveedor.id_for_label }}"]');
+          function updateProveedorLabel() {
+              if (proveedorLabel) {
+                  proveedorLabel.textContent = claseSelect.value === 'exportacion' ? 'Destinatario:' : 'Proveedor:';
+              }
+          }
+          if (claseSelect) {
+              claseSelect.addEventListener('change', updateProveedorLabel);
+              updateProveedorLabel();
+          }
       });
     </script>
   </body>

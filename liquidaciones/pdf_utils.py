@@ -479,9 +479,16 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
             "",
             "",
         ],
-        ["Origen / Procedencia:", liquidacion.procedencia or "", "", ""],
         [
-            "Proveedor:",
+            "Destino:"
+            if liquidacion.clase == "exportacion"
+            else "Origen / Procedencia:",
+            liquidacion.procedencia or "",
+            "",
+            "",
+        ],
+        [
+            "Destinatario:" if liquidacion.clase == "exportacion" else "Proveedor:",
             liquidacion.proveedor.nombre if liquidacion.proveedor else "",
             "",
             "",
