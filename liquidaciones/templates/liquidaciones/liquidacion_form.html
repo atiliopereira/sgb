@@ -338,11 +338,19 @@
             </div>
             <div class="form-row">
               <label
-                for="{{ form.tipo_cambio.id_for_label }}"
+                for="{{ form.tipo_cambio_despacho.id_for_label }}"
                 class="form-label"
-                >Tipo de Cambio:</label
+                >Tipo de Cambio Despacho:</label
               >
-              {{ form.tipo_cambio }}
+              {{ form.tipo_cambio_despacho }}
+            </div>
+            <div class="form-row">
+              <label
+                for="{{ form.tipo_cambio_factura.id_for_label }}"
+                class="form-label"
+                >Tipo de Cambio Factura:</label
+              >
+              {{ form.tipo_cambio_factura }}
             </div>
             <div class="form-row">
               <label for="{{ form.proveedor.id_for_label }}" class="form-label"

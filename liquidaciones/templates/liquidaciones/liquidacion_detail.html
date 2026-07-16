@@ -147,8 +147,12 @@
                                 {{ liquidacion.equivalente_gs|format_guaranies }}
                             </div>
                             <div class="col-sm-6">
-                                <strong>Tipo de Cambio:</strong><br>
-                                {{ liquidacion.tipo_cambio }}
+                                <strong>Tipo de Cambio Despacho:</strong><br>
+                                {{ liquidacion.tipo_cambio_despacho }}
+                            </div>
+                            <div class="col-sm-6">
+                                <strong>Tipo de Cambio Factura:</strong><br>
+                                {{ liquidacion.tipo_cambio_factura }}
                             </div>
                             <div class="col-sm-12">
                                 <strong>{% if liquidacion.clase == 'exportacion' %}Destinatario:{% else %}Proveedor:{% endif %}</strong><br>

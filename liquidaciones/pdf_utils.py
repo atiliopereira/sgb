@@ -474,10 +474,10 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
             else "",
         ],
         [
-            "T.C. " + liquidacion.moneda_valor_imponible + ":",
-            liquidacion.tipo_cambio or "",
-            "",
-            "",
+            "T.C. Despacho " + liquidacion.moneda_valor_imponible + ":",
+            liquidacion.tipo_cambio_despacho or "",
+            "T.C. Factura:",
+            liquidacion.tipo_cambio_factura or "",
         ],
         [
             "Destino:"

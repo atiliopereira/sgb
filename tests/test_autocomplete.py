@@ -298,7 +298,8 @@ class IntegrationTests(AutocompleteTestCase):
             valor_imponible='1000.00',
             moneda_valor_imponible=Liquidacion.MonedaChoices.USD,
             equivalente_gs='7000000',
-            tipo_cambio='7000',
+            tipo_cambio_despacho='7000',
+            tipo_cambio_factura='7100',
             proveedor=self.proveedor1,
         )
         self.assertEqual(liquidacion.proforma, 'PRO-123')
@@ -318,7 +319,8 @@ class IntegrationTests(AutocompleteTestCase):
             valor_imponible='1000.00',
             moneda_valor_imponible=Liquidacion.MonedaChoices.USD,
             equivalente_gs='7000000',
-            tipo_cambio='7000',
+            tipo_cambio_despacho='7000',
+            tipo_cambio_factura='7100',
             proveedor=self.proveedor1,
         )
         self.assertIsNone(liquidacion.proforma)
