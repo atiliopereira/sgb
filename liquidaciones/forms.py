@@ -23,6 +23,7 @@ class LiquidacionForm(forms.ModelForm):
             'seguro': forms.TextInput(attrs={'class': 'form-control formatted-decimal', 'style': 'text-align:right', 'placeholder': '0,00'}),
             'valor_imponible': forms.TextInput(attrs={'class': 'form-control formatted-decimal', 'style': 'text-align:right', 'placeholder': '0,00', 'readonly': True}),
             'moneda_valor_imponible': forms.Select(attrs={'class': 'form-control'}),
+            'moneda_factura': forms.Select(attrs={'class': 'form-control'}),
             'equivalente_gs': forms.TextInput(attrs={'class': 'form-control formatted-number', 'style': 'text-align:right', 'placeholder': '0'}),
             'tipo_cambio_despacho': forms.TextInput(attrs={'class': 'form-control'}),
             'tipo_cambio_factura': forms.TextInput(attrs={'class': 'form-control'}),

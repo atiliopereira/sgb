@@ -139,7 +139,7 @@
                             <div class="col-sm-6">
                                 <strong>Valor Imponible:</strong><br>
                                 <i class="fas fa-money-bill me-1 text-success"></i>
-                                {{ liquidacion.valor_imponible|format_decimal }} {{ liquidacion.get_moneda_valor_imponible_display }}
+                                {{ liquidacion.valor_imponible|format_decimal }} {{ liquidacion.moneda_valor_imponible }}
                             </div>
                             <div class="col-sm-6">
                                 <strong>Equivalente Gs:</strong><br>
@@ -153,6 +153,10 @@
                             <div class="col-sm-6">
                                 <strong>Tipo de Cambio Factura:</strong><br>
                                 {{ liquidacion.tipo_cambio_factura }}
+                            </div>
+                            <div class="col-sm-6">
+                                <strong>Moneda Factura:</strong><br>
+                                {{ liquidacion.moneda_factura }}
                             </div>
                             <div class="col-sm-12">
                                 <strong>{% if liquidacion.clase == 'exportacion' %}Destinatario:{% else %}Proveedor:{% endif %}</strong><br>

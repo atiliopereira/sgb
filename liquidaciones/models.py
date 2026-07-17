@@ -23,15 +23,30 @@ class Proveedor(models.Model):
         return self.nombre
 
 
+class Moneda(models.Model):
+    codigo = models.CharField(max_length=10, unique=True)
+    nombre = models.CharField(max_length=50)
+
+    class Meta:
+        verbose_name = "Moneda"
+        verbose_name_plural = "Monedas"
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return self.nombre
+
+
+def get_default_moneda_factura():
+    moneda, _ = Moneda.objects.get_or_create(
+        codigo="PYG", defaults={"nombre": "Guaraníes"}
+    )
+    return moneda.pk
+
+
 class Liquidacion(models.Model):
     class ClaseChoices(models.TextChoices):
         IMPORTACION = "importacion", "Importación"
         EXPORTACION = "exportacion", "Exportación"
-
-    class MonedaChoices(models.TextChoices):
-        USD = "USD", "USD"
-        EURO = "EURO", "EURO"
-        GUARANIES = "GUARANIES", "Guaraníes"
 
     fecha = models.DateField()
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
@@ -47,8 +62,16 @@ class Liquidacion(models.Model):
     flete = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     seguro = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     valor_imponible = models.DecimalField(max_digits=12, decimal_places=2)
-    moneda_valor_imponible = models.CharField(
-        max_length=10, choices=MonedaChoices.choices
+    moneda_valor_imponible = models.ForeignKey(
+        Moneda,
+        on_delete=models.PROTECT,
+        related_name="liquidaciones_valor_imponible",
+    )
+    moneda_factura = models.ForeignKey(
+        Moneda,
+        on_delete=models.PROTECT,
+        related_name="liquidaciones_factura",
+        default=get_default_moneda_factura,
     )
     equivalente_gs = models.DecimalField(max_digits=12, decimal_places=2)
     tipo_cambio_despacho = models.CharField(max_length=20)

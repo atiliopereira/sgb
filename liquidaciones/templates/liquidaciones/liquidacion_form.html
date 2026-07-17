@@ -353,6 +353,14 @@
               {{ form.tipo_cambio_factura }}
             </div>
             <div class="form-row">
+              <label
+                for="{{ form.moneda_factura.id_for_label }}"
+                class="form-label"
+                >Moneda Factura:</label
+              >
+              {{ form.moneda_factura }}
+            </div>
+            <div class="form-row">
               <label for="{{ form.proveedor.id_for_label }}" class="form-label"
                 >{% if form.instance.clase == 'exportacion' %}Destinatario:{% else %}Proveedor:{% endif %}</label
               >

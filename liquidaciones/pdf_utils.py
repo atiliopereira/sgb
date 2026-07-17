@@ -448,7 +448,7 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
             else "",
         ],
         [
-            "Valor Imponible en " + liquidacion.moneda_valor_imponible + ":",
+            "Valor Imponible en " + liquidacion.moneda_valor_imponible.codigo + ":",
             f"{liquidacion.valor_imponible:,.2f}".replace(",", "X")
             .replace(".", ",")
             .replace("X", ".")
@@ -474,9 +474,9 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
             else "",
         ],
         [
-            "T.C. Despacho " + liquidacion.moneda_valor_imponible + ":",
+            "T.C. Despacho " + liquidacion.moneda_valor_imponible.codigo + ":",
             liquidacion.tipo_cambio_despacho or "",
-            "T.C. Factura:",
+            "T.C. Factura " + liquidacion.moneda_factura.codigo + ":",
             liquidacion.tipo_cambio_factura or "",
         ],
         [
@@ -496,7 +496,7 @@ def generar_pdf_liquidacion(liquidacion, buffer=None):
     ]
 
     detalle_table = Table(
-        detalle_data, colWidths=[2 * inch, 2.8 * inch, 1 * inch, 1.2 * inch]
+        detalle_data, colWidths=[2 * inch, 2.8 * inch, 1.5 * inch, 1.2 * inch]
     )
     detalle_table.setStyle(
         TableStyle(

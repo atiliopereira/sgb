@@ -1,7 +1,13 @@
 from django.contrib import admin
 
-from .models import (Banco, Liquidacion, LiquidacionItem, Pago, Procedencia,
-                     Proveedor)
+from .models import (Banco, Liquidacion, LiquidacionItem, Moneda, Pago,
+                     Procedencia, Proveedor)
+
+
+@admin.register(Moneda)
+class MonedaAdmin(admin.ModelAdmin):
+    list_display = ("codigo", "nombre")
+    search_fields = ("codigo", "nombre")
 
 
 @admin.register(Procedencia)

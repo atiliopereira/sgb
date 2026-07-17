@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate
 import json
 
 from clientes.models import Cliente
-from liquidaciones.models import Procedencia, Proveedor, Liquidacion
+from liquidaciones.models import Moneda, Procedencia, Proveedor, Liquidacion
 
 
 class AutocompleteTestCase(TestCase):
@@ -296,7 +296,7 @@ class IntegrationTests(AutocompleteTestCase):
             partida_arancelaria='1234.56',
             ad_valorem='10%',
             valor_imponible='1000.00',
-            moneda_valor_imponible=Liquidacion.MonedaChoices.USD,
+            moneda_valor_imponible=Moneda.objects.get(codigo='USD'),
             equivalente_gs='7000000',
             tipo_cambio_despacho='7000',
             tipo_cambio_factura='7100',
@@ -317,7 +317,7 @@ class IntegrationTests(AutocompleteTestCase):
             partida_arancelaria='1234.56',
             ad_valorem='10%',
             valor_imponible='1000.00',
-            moneda_valor_imponible=Liquidacion.MonedaChoices.USD,
+            moneda_valor_imponible=Moneda.objects.get(codigo='USD'),
             equivalente_gs='7000000',
             tipo_cambio_despacho='7000',
             tipo_cambio_factura='7100',
